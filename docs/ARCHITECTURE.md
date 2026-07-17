@@ -368,11 +368,12 @@ nothing but your imagination. Capture real traffic first.
 3. **Are there other `Browse.Item` response shapes?** Our fixtures come from one
    DSM 7 NAS. Albums, shared links (`/mo/sharing/…`) and person/place views may
    differ.
-4. **Is `SYNO.Foto` vs `SYNO.FotoTeam` the whole story?** There may be other
-   method families (albums, search) that also identify the open photo.
-   `SYNO.Foto.Browse.Item` (personal) is **inferred by symmetry** with the
-   captured `SYNO.FotoTeam.Browse.Item` — plausible, but not yet observed. First
-   run against a personal library confirms or breaks it.
+4. **Is `SYNO.Foto` vs `SYNO.FotoTeam` the whole story?**
+   `SYNO.Foto.Browse.Item` (personal) was **inferred by symmetry** with the
+   captured `SYNO.FotoTeam.Browse.Item` and **confirmed on a live personal
+   library 2026-07-17** — the location feature works there, so the matcher sees
+   real personal-space traffic. Still open: whether other method families
+   (albums, search, people, places) also identify the open photo.
 5. **What is `POST webapi/entry.cgi` without a method?** Observed but
    unidentified — the method is presumably form-encoded in the body. If it turns
    out to carry photo data, the bridge would need to pass the request body

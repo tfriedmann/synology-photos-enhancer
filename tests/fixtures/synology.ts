@@ -103,8 +103,11 @@ export const TEAM_ITEM_URL = 'webapi/entry.cgi/SYNO.FotoTeam.Browse.Item';
 /**
  * The personal-space equivalent.
  *
- * Inferred by symmetry with the shared-space URL above, not yet captured from a
- * personal library — the only URL here that is not verbatim.
+ * The method name was inferred by symmetry with the shared-space URL above, then
+ * confirmed on a live personal library (2026-07-17): the location feature works
+ * there, so this matcher sees real personal-space traffic. The exact URL string
+ * has not been captured byte-for-byte, but the `SYNO.Foto.Browse.Item` method it
+ * hinges on is confirmed.
  */
 export const PERSONAL_ITEM_URL = 'webapi/entry.cgi/SYNO.Foto.Browse.Item';
 
