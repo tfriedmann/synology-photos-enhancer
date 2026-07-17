@@ -61,24 +61,38 @@ export const MAP_PROVIDERS: readonly MapProvider[] = [google, openStreetMap];
 export const DEFAULT_PROVIDER_ID = google.id;
 
 /** The plugin's persisted options. */
-export interface LocationLinkOptions {
+export interface LocationOptions {
+  /** Which map the link and "open larger" point at. */
   readonly provider: string;
+  /**
+   * Whether the 🗺 map-preview button is shown.
+   *
+   * Off by default: the preview fetches tiles from a third party, so it is
+   * opt-in even though the rest of the plugin (a link) sends nothing until
+   * clicked. See the plugin doc.
+   */
+  readonly preview: boolean;
 }
 
 /**
  * Reads the stored options.
  *
  * Total by design: storage is user-editable and survives upgrades, so an
- * unknown or malformed provider id must fall back rather than break the
- * feature — a removed provider should not leave someone with a dead link.
+ * unknown or malformed value must fall back field by field rather than break
+ * the feature — a removed provider should not leave someone with a dead link.
  */
-export function parseOptions(value: unknown): LocationLinkOptions {
-  if (!isRecord(value)) return { provider: DEFAULT_PROVIDER_ID };
-  const provider = value['provider'];
-  if (!isString(provider) || !MAP_PROVIDERS.some((p) => p.id === provider)) {
-    return { provider: DEFAULT_PROVIDER_ID };
-  }
-  return { provider };
+export function parseOptions(value: unknown): LocationOptions {
+  const record = isRecord(value) ? value : {};
+
+  const stored = record['provider'];
+  const provider =
+    isString(stored) && MAP_PROVIDERS.some((p) => p.id === stored) ? stored : DEFAULT_PROVIDER_ID;
+
+  /* Strict `=== true`: any other stored value means "not enabled", which is the
+   * safe default for something that talks to a third party. */
+  const preview = record['preview'] === true;
+
+  return { provider, preview };
 }
 
 /** Resolves stored options to a provider, always returning one. */

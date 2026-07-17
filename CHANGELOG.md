@@ -10,6 +10,54 @@ Until 1.0.0, the minor version is the feature counter — see the
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-17
+
+A map preview in the lightbox — and `locationLink` grows into `location`.
+
+### Added
+
+- **Map preview.** A 🗺 button beside the location opens an in-page map centred
+  on the photo, with **+/- zoom**, the coordinates, an "open larger" link and
+  OpenStreetMap attribution. Enable it from the **Location** row in the popup.
+  Zoom is by button, not wheel — one deliberate tile request per press, never a
+  burst — and the map stays centred on the photo (it does not pan).
+- **The tiles come from OpenStreetMap, computed without a mapping library.**
+  `src/plugins/location/tiles.ts` implements the standard Web Mercator
+  projection (~40 lines), so the preview draws `<img>` tiles directly — no
+  Leaflet, no runtime dependency, no API key.
+- **`findLightboxAddress` moved to `src/api/selectors.ts`** — shared
+  Synology-DOM knowledge, since plugins may not import each other.
+
+### Changed
+
+- **`locationLink` is now `location`, and absorbs the map preview.**
+
+  These were going to be two plugins — a link and a mini map. They cannot be,
+  for the same reason `openStreetMap` could not be its own plugin in 0.3.0: they
+  must **share one setting**, the map provider, and a plugin cannot read another
+  plugin's options. Two plugins that must share a preference are one feature.
+
+  So one plugin owns the address text (click → open in Google or OSM) _and_ the
+  🗺 button beside it (click → preview). A single plugin owning two nodes is fine;
+  the rule only forbids two plugins owning the same node.
+
+  The preview's tiles are always OSM's — the only free, keyless source — but its
+  "open larger" link follows your chosen provider. OSM tiles, a Google link if
+  that is what you picked: the honest best of both.
+
+  Breaking: the plugin id changed from `location-link` to `location`, so the
+  provider preference resets once.
+
+### Notes
+
+- **The preview is off by default and loads on demand.** A map means fetching
+  tiles from a third party. Rendering it automatically would send the location
+  of every geotagged photo you view to OpenStreetMap — quietly breaking the
+  "nothing is sent anywhere" promise. So the button is opt-in and the only tile
+  request happens on click.
+- **Robust to a strict CSP.** If Synology's `img-src` blocks the tiles, each
+  failed tile is removed and the popup still shows the coordinates and the link.
+
 ## [0.3.0] — 2026-07-17
 
 OpenStreetMap — and a course correction the roadmap could not have foreseen.
@@ -132,7 +180,8 @@ that features plug into. The first one (Google Maps) lands in 0.2.0.
   [§8 of the architecture doc](docs/ARCHITECTURE.md#8-what-we-do-not-know) —
   chiefly whether the timeline lightbox routes at all.
 
-[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tfriedmann/synology-photos-enhancer/releases/tag/v0.1.0
