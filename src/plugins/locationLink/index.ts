@@ -1,47 +1,55 @@
 import { SELECTORS } from '@/api/selectors';
 import { definePlugin } from '@/core/plugin';
+import type { SettingsStore } from '@/core/settings';
 import type { SynoGps } from '@/types/synology';
 import { injectPageStyles } from '@/ui/pageStyles';
+import { el } from '@/utils/dom';
+
+import { MAP_PROVIDERS, parseOptions, resolveProvider } from './providers';
 
 /**
- * Makes the photo's location clickable, opening it in Google Maps.
+ * Makes the photo's location clickable, opening it in the map of your choice.
  *
  * Synology writes the address under the photo but does nothing with it. The GPS
  * is right there in the API response — it just never reaches the UI.
  *
- * ## The design decision worth explaining
+ * ## Why one plugin and not one per map
  *
- * The obvious implementation — the one the original userscript used, and the
- * one anyone writes first — is to replace the address line's contents with an
- * `<a>`:
+ * `googleMaps` and `openStreetMap` as separate plugins would target the *same*
+ * element and fight over it: two listeners, one click, two tabs. Nor could they
+ * negotiate, since plugins may not know about each other. So the plugin owns
+ * the element and the maps are data — see `providers.ts`.
+ *
+ * ## Why it never touches Synology's children
+ *
+ * The obvious implementation replaces the address line's contents with an `<a>`:
  *
  * ```js
  * address.innerHTML = '';
  * address.appendChild(link);   // don't
  * ```
  *
- * That fights React for ownership of a node React owns, and loses in three
- * ways. It **destroys the address text**, so there is nothing to restore if we
- * later need to undo. It goes **stale**: if React reuses the node and only
- * swaps the text, our link keeps the *previous* photo's coordinates while
- * showing the *new* photo's address — pointing at the wrong place, confidently.
- * And it starts a **churn loop**, where React rewrites the text, we rebuild the
- * link, forever.
+ * That fights React for a node React owns, and loses in three ways. It
+ * **destroys the address text**, leaving nothing to restore. It goes **stale**:
+ * if React reuses the node and swaps only the text, the link keeps the
+ * *previous* photo's coordinates under the *new* photo's address — pointing at
+ * the wrong place, confidently. And it starts a **churn loop**, React rewriting
+ * the text and us rebuilding the link, forever.
  *
- * So we never touch their children. We add a class, `role`, `tabindex` and a
- * listener to their element, and let CSS supply the 📍 via `::before`. React can
- * re-render the text as often as it likes — the text is still theirs, and the
- * handler reads the current GPS from this closure at click time, so it cannot
- * go stale. If React strips our class, the next mutation batch puts it back;
- * re-adding the same listener reference is a no-op, so nothing accumulates.
+ * So we add a class, `role`, `tabindex` and a listener to their element, and
+ * let CSS supply the 📍 via `::before`. React can re-render as often as it
+ * likes: the text stays theirs, and both the GPS *and* the chosen provider are
+ * read from live state at click time, so neither can go stale. If React strips
+ * our class, the next mutation batch restores it; re-adding the same listener
+ * reference is a no-op, so nothing accumulates.
  *
- * The result is a plugin that costs Synology's DOM exactly one attribute.
+ * Cost to Synology's DOM: one attribute.
  */
 
-const PLUGIN_ID = 'google-maps';
-const CLICKABLE_CLASS = 'spe-maps-clickable';
+const PLUGIN_ID = 'location-link';
+const CLICKABLE_CLASS = 'spe-location-clickable';
 
-/* Namespaced to classes we add ourselves — never a `.synofoto-*` selector.
+/* Namespaced to a class we add ourselves — never a `.synofoto-*` selector.
  * See `injectPageStyles`. */
 const STYLES = `
 .${CLICKABLE_CLASS} {
@@ -63,23 +71,12 @@ const STYLES = `
 `;
 
 /**
- * Builds a Google Maps URL.
- *
- * Uses the documented Maps URL API rather than the shorter `?q=lat,lng`: the
- * latter is a legacy form Google has never committed to, and this costs nothing.
- */
-export function buildMapsUrl(gps: SynoGps): string {
-  const query = encodeURIComponent(`${String(gps.latitude)},${String(gps.longitude)}`);
-  return `https://www.google.com/maps/search/?api=1&query=${query}`;
-}
-
-/**
  * Finds the address line in the lightbox info panel.
  *
  * Mirrors the app's structure: the location icon and the info block are
  * siblings, so we reach the address through their shared parent. Returns
- * `undefined` whenever any link in the chain is missing — which is the normal
- * case for a photo with no location, not an error.
+ * `undefined` whenever any link in the chain is missing — the normal case for a
+ * photo with no location, not an error.
  */
 export function findAddressElement(root: ParentNode = document): HTMLElement | undefined {
   const indicator = root.querySelector(SELECTORS.locationIndicator);
@@ -89,28 +86,34 @@ export function findAddressElement(root: ParentNode = document): HTMLElement | u
 
 export default definePlugin({
   id: PLUGIN_ID,
-  name: 'Google Maps',
-  description: "Makes the photo's location clickable and opens it in Google Maps.",
+  name: 'Clickable location',
+  description: "Opens the photo's location in a map.",
   enabledByDefault: true,
 
-  setup({ bus, log, signal }) {
-    /** The open photo's coordinates. Read at click time, so it can never be stale. */
+  setup({ bus, log, settings, signal }) {
+    /** The open photo's coordinates. Read at click time, so it cannot be stale. */
     let gps: SynoGps | undefined;
 
     injectPageStyles(PLUGIN_ID, STYLES, signal);
 
     const open = (): void => {
       if (!gps) return;
-      const url = buildMapsUrl(gps);
-      log.debug('Opening', url);
+
+      /* Read at click time, exactly like the GPS: switch provider in the popup
+       * and the very next click uses it — no subscription, nothing to
+       * invalidate, nothing that can drift out of sync. */
+      const provider = resolveProvider(settings.getPluginOptions(PLUGIN_ID));
+      const url = provider.buildUrl(gps);
+
+      log.debug('Opening', provider.id, url);
       /* `noopener` is not optional on a `window.open` to a third party: without
        * it the new tab gets a handle back to this one via `window.opener`. */
       window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     const onClick = (event: Event): void => {
-      /* Synology's own handlers sit on the ancestors of this node and react to
-       * clicks in the info panel. Without this, opening Maps also triggers
+      /* Synology's own handlers sit on this node's ancestors and react to
+       * clicks in the info panel. Without this, opening a map also triggers
        * whatever they do — closing the lightbox, typically. */
       event.stopPropagation();
       event.preventDefault();
@@ -129,9 +132,9 @@ export default definePlugin({
     /**
      * Ensures the address element is marked up as clickable.
      *
-     * Idempotent by design: it is called on every mutation batch. The class is
-     * the "have I done this?" check, and re-adding the same listener reference
-     * is a no-op in the DOM, so a node React stripped is repaired for free.
+     * Idempotent by design: it runs on every mutation batch. The class is the
+     * "have I done this?" check, and re-adding the same listener reference is a
+     * DOM no-op, so a node React stripped is repaired for free.
      */
     const render = (): void => {
       const address = findAddressElement();
@@ -169,8 +172,8 @@ export default definePlugin({
     );
 
     /* React rebuilds the info panel constantly, and the panel often appears
-     * after `photo:changed` has already fired. Batched to one call per animation
-     * frame by the core, so this stays cheap. */
+     * after `photo:changed` has already fired. Batched to one call per
+     * animation frame by the core, so this stays cheap. */
     bus.on('dom:mutation', render, { signal });
   },
 
@@ -183,5 +186,26 @@ export default definePlugin({
       node.removeAttribute('role');
       node.removeAttribute('tabindex');
     }
+  },
+
+  /** The provider picker, shown under this plugin's row in the popup. */
+  renderOptions(settings: SettingsStore): HTMLElement {
+    const select = el('select', { className: 'select plugin__option' });
+    const current = parseOptions(settings.getPluginOptions(PLUGIN_ID)).provider;
+
+    for (const provider of MAP_PROVIDERS) {
+      const option = el('option', { text: provider.name, attrs: { value: provider.id } });
+      option.selected = provider.id === current;
+      select.append(option);
+    }
+
+    select.addEventListener('change', () => {
+      void settings.setPluginOptions(PLUGIN_ID, { provider: select.value });
+    });
+
+    return el('label', {
+      className: 'plugin__option-row',
+      children: [el('span', { text: 'Open in' }), select],
+    });
   },
 });

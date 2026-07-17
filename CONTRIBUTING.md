@@ -136,7 +136,7 @@ What deserves a test:
   `docs/ARCHITECTURE.md`. Future-you will not remember, and that file is the
   reason this project can survive being put down for six months.
 - If you learn something about Synology's behaviour — especially anything in
-  **§7 "What we do not know"** — update it. A confirmed unknown is a real
+  **§8 "What we do not know"** — update it. A confirmed unknown is a real
   contribution, even with no code.
 
 ## Especially useful contributions
@@ -147,7 +147,7 @@ author's are genuinely valuable**:
 - A different DSM version.
 - Locales other than English/French — text-selector bugs hide here.
 - Shared albums, public sharing links (`/mo/sharing/…`), person and place views.
-- Anything answering an open question in §7 of `docs/ARCHITECTURE.md` — the
+- Anything answering an open question in §8 of `docs/ARCHITECTURE.md` — the
   timeline lightbox routing question above all.
 
 ## Code style

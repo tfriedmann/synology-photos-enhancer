@@ -40,6 +40,7 @@ describe('parseSettings', () => {
     expect(parseSettings({ logLevel: 'debug', plugins: { 'dev-probe': true } })).toEqual({
       logLevel: 'debug',
       plugins: { 'dev-probe': true },
+      options: {},
     });
   });
 
@@ -73,7 +74,11 @@ describe('parseSettings', () => {
 describe('loadSettings', () => {
   it('reads stored settings', async () => {
     const area = fakeArea({ settings: { logLevel: 'debug', plugins: {} } });
-    await expect(loadSettings(area)).resolves.toEqual({ logLevel: 'debug', plugins: {} });
+    await expect(loadSettings(area)).resolves.toEqual({
+      logLevel: 'debug',
+      plugins: {},
+      options: {},
+    });
   });
 
   it('returns defaults when nothing is stored', async () => {
@@ -107,14 +112,14 @@ describe('createSettingsStore', () => {
 
     expect(store.get().logLevel).toBe('debug');
     expect(store.get().plugins).toEqual({});
-    expect(area.written[0]).toEqual({ settings: { logLevel: 'debug', plugins: {} } });
+    expect(area.written[0]).toEqual({ settings: { logLevel: 'debug', plugins: {}, options: {} } });
     expect(listener).toHaveBeenCalledOnce();
   });
 
   it('setPluginEnabled keeps the other plugins', async () => {
     const store = createSettingsStore({
       area: fakeArea(),
-      initial: { logLevel: 'warn', plugins: { a: true } },
+      initial: { ...DEFAULT_SETTINGS, plugins: { a: true } },
     });
 
     await store.setPluginEnabled('b', false);
@@ -125,12 +130,70 @@ describe('createSettingsStore', () => {
   it('isPluginEnabled falls back when the user has no stored preference', () => {
     const store = createSettingsStore({
       area: fakeArea(),
-      initial: { logLevel: 'warn', plugins: { stored: false } },
+      initial: { ...DEFAULT_SETTINGS, plugins: { stored: false } },
     });
 
     expect(store.isPluginEnabled('stored', true)).toBe(false);
     expect(store.isPluginEnabled('unknown', true)).toBe(true);
     expect(store.isPluginEnabled('unknown', false)).toBe(false);
+  });
+
+  describe('plugin options', () => {
+    /* The core stores these blind: it must never learn what a plugin keeps in
+     * them, or it would know that plugin exists. */
+
+    it('returns undefined for a plugin with nothing stored', () => {
+      const store = createSettingsStore({ area: fakeArea(), initial: DEFAULT_SETTINGS });
+      expect(store.getPluginOptions('anything')).toBeUndefined();
+    });
+
+    it('round-trips an arbitrary value untouched', () => {
+      const store = createSettingsStore({ area: fakeArea(), initial: DEFAULT_SETTINGS });
+      const value = { provider: 'osm', nested: { deep: [1, 2] } };
+
+      void store.setPluginOptions('location-link', value);
+
+      expect(store.getPluginOptions('location-link')).toEqual(value);
+    });
+
+    it("keeps other plugins' options", async () => {
+      const store = createSettingsStore({
+        area: fakeArea(),
+        initial: { ...DEFAULT_SETTINGS, options: { a: { x: 1 } } },
+      });
+
+      await store.setPluginOptions('b', { y: 2 });
+
+      expect(store.get().options).toEqual({ a: { x: 1 }, b: { y: 2 } });
+    });
+
+    it('persists and notifies', async () => {
+      const area = fakeArea();
+      const store = createSettingsStore({ area, initial: DEFAULT_SETTINGS });
+      const listener = vi.fn();
+      store.subscribe(listener);
+
+      await store.setPluginOptions('p', { k: 'v' });
+
+      expect(area.written[0]).toEqual({
+        settings: { logLevel: 'warn', plugins: {}, options: { p: { k: 'v' } } },
+      });
+      expect(listener).toHaveBeenCalledOnce();
+    });
+
+    it('survives a stored options value that is not an object', () => {
+      expect(parseSettings({ options: 'nope' }).options).toEqual({});
+      expect(parseSettings({ options: null }).options).toEqual({});
+    });
+
+    it('passes stored options through without validating them', () => {
+      /* The core cannot validate what it does not understand — each plugin
+       * guards its own slice. Even nonsense must survive the round trip so the
+       * plugin gets a chance to fall back. */
+      expect(parseSettings({ options: { p: { anything: [1, 'two'] } } }).options).toEqual({
+        p: { anything: [1, 'two'] },
+      });
+    });
   });
 
   it('applies an external change, e.g. the popup writing while a tab is open', () => {
@@ -146,7 +209,7 @@ describe('createSettingsStore', () => {
     const listener = vi.fn();
     store.subscribe(listener);
 
-    publish?.({ logLevel: 'silent', plugins: { a: true } });
+    publish?.({ ...DEFAULT_SETTINGS, logLevel: 'silent', plugins: { a: true } });
 
     expect(store.get().logLevel).toBe('silent');
     expect(listener).toHaveBeenCalledOnce();

@@ -66,6 +66,18 @@ export interface Plugin {
   setup(context: PluginContext): void | Promise<void>;
   /** Only needed for cleanup that `context.signal` cannot express. */
   teardown?(): void | Promise<void>;
+  /**
+   * Optional settings UI, rendered under this plugin's row in the popup.
+   *
+   * It lives here rather than in the popup so that a plugin's options stay in
+   * the plugin. The alternative — the popup rendering a hard-coded control for
+   * each plugin that happens to have one — puts feature knowledge in the shell
+   * and grows a new branch with every plugin.
+   *
+   * Runs in the **popup** document, not in the page: it gets `settings` and
+   * nothing else, because none of the rest of `PluginContext` exists there.
+   */
+  renderOptions?(settings: SettingsStore): HTMLElement;
 }
 
 /**
