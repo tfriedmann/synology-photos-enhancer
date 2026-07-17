@@ -2,6 +2,7 @@ import type { Plugin } from '@/core/plugin';
 
 import devProbe from './devProbe';
 import locationLink from './locationLink';
+import miniMap from './miniMap';
 
 /**
  * The plugin registry — the single list of everything that ships.
@@ -32,9 +33,9 @@ import locationLink from './locationLink';
 export const plugins: readonly Plugin[] = [
   devProbe,
   locationLink,
+  miniMap,
 
   /* Coming per the roadmap — each lands as its own folder + one line here:
-   *   v0.4.0  miniMap
    *   v0.5.0  exif
    *   v0.8.0  statistics
    * They are deliberately absent rather than stubbed: an empty folder is dead

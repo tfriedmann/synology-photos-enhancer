@@ -10,6 +10,37 @@ Until 1.0.0, the minor version is the feature counter — see the
 
 ## [Unreleased]
 
+## [0.4.0] — 2026-07-17
+
+A map preview in the lightbox — kept honest about what it sends where.
+
+### Added
+
+- **Mini map plugin.** Adds a 🗺 button beside the location. Click it for an
+  in-page map preview centred on the photo, with the coordinates, an "open
+  larger" link and OpenStreetMap attribution.
+- **The map tiles come from OpenStreetMap, computed without a mapping library.**
+  `src/plugins/miniMap/tiles.ts` implements the standard Web Mercator
+  projection (~40 lines), so the preview draws `<img>` tiles directly — no
+  Leaflet, no runtime dependency, no API key.
+- **`findLightboxAddress` moved to `src/api/selectors.ts`.** Both `locationLink`
+  and `miniMap` need the address element, and plugins may not import each other,
+  so the shared Synology-DOM traversal lives in `api/` with the selectors.
+
+### Notes
+
+- **On demand, and off by default.** A map means fetching tiles from a third
+  party. Rendering inline would send the coordinates of every geotagged photo
+  you view to OpenStreetMap automatically — quietly breaking the "nothing is
+  sent anywhere" promise. So the tile request happens only when you click, and
+  the plugin ships disabled. Enable it in the popup.
+- **Robust to a strict CSP.** If Synology's `img-src` blocks the tiles, each
+  failed tile is removed and the popup still shows the coordinates and the link.
+  The map is a bonus, never the whole thing.
+- Two plugins now share the address line: `locationLink` owns the text (opens a
+  map in a tab), `miniMap` owns the 🗺 button beside it (opens the preview).
+  Different nodes, no conflict — the ownership rule from §6 in action.
+
 ## [0.3.0] — 2026-07-17
 
 OpenStreetMap — and a course correction the roadmap could not have foreseen.
@@ -132,7 +163,8 @@ that features plug into. The first one (Google Maps) lands in 0.2.0.
   [§8 of the architecture doc](docs/ARCHITECTURE.md#8-what-we-do-not-know) —
   chiefly whether the timeline lightbox routes at all.
 
-[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tfriedmann/synology-photos-enhancer/releases/tag/v0.1.0

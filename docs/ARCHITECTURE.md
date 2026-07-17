@@ -247,14 +247,19 @@ So `googleMaps` became `locationLink`: the plugin owns the element, and a map is
 data — a name and a `gps => url` function in `providers.ts`. Adding one is four
 lines and cannot conflict with anything.
 
-**It applies again.** Street View (roadmap v0.6.0) targets the same element. It
-is a provider, not a plugin. The mini map (v0.4.0) renders _next to_ the address
-rather than on it, so it can be its own plugin — the test is ownership of a
-node, not subject matter.
+**It applies again, and it cuts both ways.** Street View (roadmap v0.6.0)
+targets the same element — the address text — so it is a provider of
+`locationLink`, not a plugin. The mini map (v0.4.0) is also "about the
+location", but it owns a _different_ node: a 🗺 button it adds _beside_ the
+address. Same subject, different node, so it is its own plugin — and the two
+coexist without knowing about each other (`locationLink` owns the text,
+`miniMap` owns the button). Subject matter is not the test; node ownership is.
 
 **How to tell.** Ask what the plugin _owns_. Two plugins wanting to own the same
 node is the smell. Two plugins reading the same event is fine — that is what the
-bus is for.
+bus is for. And when two plugins need the same _information_ from the DOM — both
+must find the address — that shared traversal goes in `api/`
+(`findLightboxAddress`), never imported plugin-to-plugin.
 
 ### Per-plugin options
 

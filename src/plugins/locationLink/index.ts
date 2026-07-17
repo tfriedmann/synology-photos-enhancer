@@ -1,4 +1,4 @@
-import { SELECTORS } from '@/api/selectors';
+import { findLightboxAddress } from '@/api/selectors';
 import { definePlugin } from '@/core/plugin';
 import type { SettingsStore } from '@/core/settings';
 import type { SynoGps } from '@/types/synology';
@@ -6,6 +6,13 @@ import { injectPageStyles } from '@/ui/pageStyles';
 import { el } from '@/utils/dom';
 
 import { MAP_PROVIDERS, parseOptions, resolveProvider } from './providers';
+
+/**
+ * Re-exported for tests. The traversal lives in `api/selectors.ts` because
+ * `miniMap` needs the same address element and plugins may not share code
+ * directly.
+ */
+export { findLightboxAddress as findAddressElement } from '@/api/selectors';
 
 /**
  * Makes the photo's location clickable, opening it in the map of your choice.
@@ -70,20 +77,6 @@ const STYLES = `
 }
 `;
 
-/**
- * Finds the address line in the lightbox info panel.
- *
- * Mirrors the app's structure: the location icon and the info block are
- * siblings, so we reach the address through their shared parent. Returns
- * `undefined` whenever any link in the chain is missing — the normal case for a
- * photo with no location, not an error.
- */
-export function findAddressElement(root: ParentNode = document): HTMLElement | undefined {
-  const indicator = root.querySelector(SELECTORS.locationIndicator);
-  const block = indicator?.parentElement?.querySelector(SELECTORS.infoBlock);
-  return block?.querySelector<HTMLElement>(SELECTORS.infoSecondLine) ?? undefined;
-}
-
 export default definePlugin({
   id: PLUGIN_ID,
   name: 'Clickable location',
@@ -137,7 +130,7 @@ export default definePlugin({
      * DOM no-op, so a node React stripped is repaired for free.
      */
     const render = (): void => {
-      const address = findAddressElement();
+      const address = findLightboxAddress();
       if (!address) return;
 
       if (!gps) {

@@ -14,9 +14,9 @@ This extension adds those things from the browser, as plugins. It talks only to
 your NAS, over your own session — nothing is installed on the NAS, nothing is
 sent anywhere else.
 
-> **Status: v0.3.0.**
-> The photo's location is clickable and opens in Google Maps or OpenStreetMap,
-> your choice. Features land one per release; see the [roadmap](#roadmap).
+> **Status: v0.4.0.**
+> The photo's location is clickable, and an optional 🗺 button previews it on a
+> map in the lightbox. Features land one per release; see the [roadmap](#roadmap).
 
 ---
 
@@ -198,8 +198,8 @@ Writing a plugin is a folder and one line: **[CONTRIBUTING.md](CONTRIBUTING.md)*
 | v0.1.0  | Architecture: plugin system, EventBus, XHR hook | ✅      |
 | v0.2.0  | Google Maps — clickable location                | ✅      |
 | v0.3.0  | OpenStreetMap                                   | ✅      |
-| v0.4.0  | Mini map in the lightbox                        | Next    |
-| v0.5.0  | Advanced EXIF                                   | Planned |
+| v0.4.0  | Mini map in the lightbox                        | ✅      |
+| v0.5.0  | Advanced EXIF                                   | Next    |
 | v0.6.0  | Street View (a `locationLink` provider)         | Planned |
 | v0.7.0  | World map of the whole library                  | Planned |
 | v0.8.0  | Statistics                                      | Planned |
