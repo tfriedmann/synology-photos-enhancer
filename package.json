@@ -1,0 +1,55 @@
+{
+  "name": "synology-photos-enhancer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser extension that enhances the Synology Photos web app. Plugin-based, no NAS-side changes.",
+  "license": "MIT",
+  "author": "tfriedmann",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tfriedmann/synology-photos-enhancer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tfriedmann/synology-photos-enhancer/issues"
+  },
+  "homepage": "https://github.com/tfriedmann/synology-photos-enhancer#readme",
+  "keywords": [
+    "synology",
+    "synology-photos",
+    "chrome-extension",
+    "manifest-v3",
+    "browser-extension"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.7.1",
+    "@eslint/js": "^10.0.1",
+    "@types/chrome": "^0.2.2",
+    "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "4.1.10",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "^10.1.8",
+    "happy-dom": "^20.10.6",
+    "prettier": "^3.9.5",
+    "typescript": "6.0.3",
+    "typescript-eslint": "^8.64.0",
+    "vite": "^8.1.5",
+    "vitest": "4.1.10"
+  }
+}

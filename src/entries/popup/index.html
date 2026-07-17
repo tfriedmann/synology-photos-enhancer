@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Synology Photos Enhancer</title>
+    <link rel="stylesheet" href="./popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup__header">
+        <h1 class="popup__title">Synology Photos Enhancer</h1>
+      </header>
+
+      <section class="card" aria-labelledby="site-heading">
+        <h2 id="site-heading" class="card__title">This site</h2>
+        <p class="site" id="site-origin">Loading…</p>
+        <p class="status" id="site-status"></p>
+        <button type="button" class="button" id="toggle-site" hidden></button>
+        <p class="hint" id="reload-hint" hidden>Reload the tab to apply.</p>
+      </section>
+
+      <section class="card" aria-labelledby="plugins-heading">
+        <h2 id="plugins-heading" class="card__title">Plugins</h2>
+        <ul class="plugins" id="plugin-list"></ul>
+      </section>
+
+      <footer class="popup__footer">
+        <label class="field">
+          <span class="field__label">Log level</span>
+          <select id="log-level" class="select">
+            <option value="debug">debug</option>
+            <option value="info">info</option>
+            <option value="warn">warn</option>
+            <option value="error">error</option>
+            <option value="silent">silent</option>
+          </select>
+        </label>
+      </footer>
+    </main>
+
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

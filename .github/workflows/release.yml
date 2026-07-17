@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # required to create the release
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # A tag is not a licence to skip the checks: whatever ships must be at
+      # least as verified as a pull request.
+      - name: Verify
+        run: npm run verify
+
+      # A tag that disagrees with package.json means the manifest version and
+      # the release name would disagree too. Cheaper to catch here than to
+      # discover after publishing.
+      - name: Check tag matches package.json
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::Tag v$TAG does not match package.json version $PKG"
+            exit 1
+          fi
+          echo "Version $PKG confirmed."
+
+      # Zipped from inside dist/ so the archive root is the extension itself —
+      # what both "Load unpacked" and the Chrome Web Store expect.
+      - name: Package
+        run: |
+          cd dist
+          zip -r "../synology-photos-enhancer-${GITHUB_REF_NAME}.zip" .
+
+      - name: Create release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: synology-photos-enhancer-*.zip
+          generate_release_notes: true
+          # Prerelease for 0.x: nothing here is API-stable yet.
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          body: |
+            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/${{ github.ref_name }}/CHANGELOG.md).
+
+            ## Install
+
+            Not on the Chrome Web Store yet.
+
+            1. Download and unzip the asset below.
+            2. Open `chrome://extensions`, turn on **Developer mode**.
+            3. **Load unpacked** → select the unzipped folder.
+            4. Open Synology Photos, click the extension icon → **Enable on this site**, then reload the tab.
+
+            The extension requests **no permissions at install time**. You grant your NAS origin, and only that one.

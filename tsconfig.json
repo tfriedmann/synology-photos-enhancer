@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    /* Language and module resolution — bundler-oriented (Vite handles emit). */
+    "target": "ES2023",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    /* Only so `eslint.config.js` is part of the program and ESLint's project
+     * service can type-check its own config. No `.js` ships from `src/`. */
+    "allowJs": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "useDefineForClassFields": true,
+    "skipLibCheck": true,
+
+    /* Strictness. `strict` is the floor, not the ceiling: the four flags below
+     * are the ones that actually catch bugs in DOM-heavy code, where
+     * `querySelector` and array indexing lie about nullability by default. */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+
+    /* Unused code is reported by ESLint (which knows about `_`-prefixed
+     * intentional discards); leaving it off here avoids duplicate diagnostics. */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
+    "types": ["chrome", "vite/client"],
+
+    /* No `baseUrl`: it is deprecated and stops working in TypeScript 7.
+     * `paths` resolves relative to this file, which is what we want anyway. */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "manifest.config.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "eslint.config.js"
+  ]
+}

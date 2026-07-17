@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.zip
+
+# Vite / CRXJS
+.vite/
+vite.config.ts.timestamp-*
+vite.config.js.timestamp-*
+
+# Test output
+coverage/
+
+# Local, machine-specific config (e.g. your NAS URL) — never commit
+.env
+.env.*
+!.env.example
+*.local
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*

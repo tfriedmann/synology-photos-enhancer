@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# A new push to a PR makes the in-flight run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # `ci` and not `install`: fails on a lockfile that drifted from
+      # package.json instead of quietly resolving something else. It is also what
+      # keeps `typescript` pinned to 6.0.3 — see CONTRIBUTING.md.
+      - run: npm ci
+
+      # Each step named so a red build says what broke without opening the log.
+      - name: Format
+        run: npm run format:check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+      # Lets a reviewer load the built extension from a PR without building it.
+      - name: Upload extension
+        uses: actions/upload-artifact@v7
+        with:
+          name: extension-${{ github.sha }}
+          path: dist/
+          retention-days: 14
