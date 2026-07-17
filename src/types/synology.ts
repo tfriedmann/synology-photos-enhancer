@@ -17,9 +17,29 @@ export interface SynoGps {
   readonly longitude: number;
 }
 
+/**
+ * Camera metadata (EXIF), as Synology returns it under `additional.exif`.
+ *
+ * Confirmed on a live library (2026-07-17): every value arrives **already
+ * formatted as a string** — `"F1.8"`, `"1/60 s"`, `"6.9 mm"`, `"160"`. Synology
+ * does the formatting, so consumers display these as-is rather than parsing
+ * them. The type still admits `number` per field, defensively, in case a
+ * different device or DSM version returns a raw value — a consumer that only
+ * ever calls `String()` on them stays correct either way.
+ */
+export interface SynoExif {
+  readonly camera?: string | number | undefined;
+  readonly lens?: string | number | undefined;
+  readonly focal_length?: string | number | undefined;
+  readonly aperture?: string | number | undefined;
+  readonly exposure_time?: string | number | undefined;
+  readonly iso?: string | number | undefined;
+}
+
 /** `additional` is opt-in per request, so any of it may be absent. */
 export interface SynoItemAdditional {
   readonly gps?: SynoGps | undefined;
+  readonly exif?: SynoExif | undefined;
   readonly thumbnail?:
     | {
         /** Required to build a thumbnail URL, and notably absent from the page URL. */

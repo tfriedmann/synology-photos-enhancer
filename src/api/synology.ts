@@ -1,4 +1,4 @@
-import type { SynoGps, SynoPhotoItem, SynoSpace } from '@/types/synology';
+import type { SynoExif, SynoGps, SynoPhotoItem, SynoSpace } from '@/types/synology';
 import { isFiniteNumber, isRecord, isString, readPath, readProp } from '@/utils/guards';
 
 /**
@@ -95,6 +95,39 @@ export function parseGps(value: unknown): SynoGps | undefined {
   return { latitude, longitude };
 }
 
+/** A displayable EXIF scalar: keep strings and numbers, drop anything else. */
+function parseExifField(value: unknown): string | number | undefined {
+  if (isString(value)) return value.trim() === '' ? undefined : value;
+  if (isFiniteNumber(value)) return value;
+  return undefined;
+}
+
+/**
+ * Parses `additional.exif`.
+ *
+ * Synology returns these pre-formatted as strings, so we do not interpret them
+ * — only keep the scalar fields we know how to show and discard the rest. A
+ * consumer that `String()`s them is correct whether a value is a string or (on
+ * some other device) a bare number.
+ */
+export function parseExif(value: unknown): SynoExif | undefined {
+  if (!isRecord(value)) return undefined;
+
+  const exif: SynoExif = {
+    camera: parseExifField(value['camera']),
+    lens: parseExifField(value['lens']),
+    focal_length: parseExifField(value['focal_length']),
+    aperture: parseExifField(value['aperture']),
+    exposure_time: parseExifField(value['exposure_time']),
+    iso: parseExifField(value['iso']),
+  };
+
+  /* All-empty EXIF is the same as no EXIF: a photo with the block present but
+   * every field stripped should not light up the feature. */
+  const hasAny = Object.values(exif).some((field) => field !== undefined);
+  return hasAny ? exif : undefined;
+}
+
 function parseAdditional(value: unknown): SynoPhotoItem['additional'] {
   if (!isRecord(value)) return undefined;
 
@@ -107,6 +140,7 @@ function parseAdditional(value: unknown): SynoPhotoItem['additional'] {
 
   return {
     gps,
+    exif: parseExif(value['exif']),
     thumbnail: {
       cache_key: isString(cacheKey) ? cacheKey : undefined,
       unit_id: isFiniteNumber(unitId) ? unitId : undefined,

@@ -34,6 +34,16 @@ export const SELECTORS = {
 
   /** Within a location block: the street address. The first line is the place name. */
   infoSecondLine: '.synofoto-lightbox-info-second-line',
+
+  /**
+   * The lightbox info panel's scrolling body — the container that holds the
+   * per-field sections (date, size, location…). The anchor for adding our own
+   * section, since it is present whether or not the photo has a location.
+   */
+  infoTabPanel: '.synofoto-lightbox-info-tab-panel',
+
+  /** One field's section inside the tab panel. We insert after the last of these. */
+  infoGeneralSection: '.synofoto-lightbox-general-section',
 } as const;
 
 /**

@@ -247,18 +247,24 @@ So `googleMaps` became `locationLink`: the plugin owns the element, and a map is
 data — a name and a `gps => url` function in `providers.ts`. Adding one is four
 lines and cannot conflict with anything.
 
-**It applies again.** Street View (roadmap v0.6.0) targets the same element —
-the address text — so it is a provider of `location`, not a plugin.
-
 **The second signal: a shared setting.** The mini map (v0.4.0) looked like a
 separate plugin at first — it owns a _different_ node, a 🗺 button beside the
 address, so node ownership alone would allow it. But it must share the **map
 provider** setting with the link, and a plugin cannot read another plugin's
 options (that is the coupling the whole design forbids). So it folded into
 `location` too. Two plugins that must share a preference are one feature, just
-as surely as two plugins fighting over a node. `location` now owns two nodes —
-the address text and the button — which is fine: the rule forbids two _plugins_
-owning the same node, not one plugin owning two.
+as surely as two plugins fighting over a node.
+
+**Inside a plugin, though, form is a UX choice.** Street View (v0.5.0) also
+belongs to `location` — same anchor, same feature — but _how_ it appears there
+was a genuine choice, not forced by the rules. It could have been a fourth map
+_provider_ (chosen in the dropdown), but that dropdown is exclusive: you would
+get Street View **instead of** a map. Since a map and a ground view are worth
+having together, it is instead a standalone 🧍 button beside the address. The
+architecture said "this lives in `location`"; the product decision said "as a
+button, not a dropdown entry". `location` now owns three nodes — address text
+and two buttons — which is fine: the rule forbids two _plugins_ owning the same
+node, not one plugin owning several.
 
 **How to tell.** Ask what the plugin _owns_ and what it must _share_. Two
 plugins wanting the same node is the smell; so is two plugins needing the same

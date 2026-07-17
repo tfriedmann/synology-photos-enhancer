@@ -10,6 +10,34 @@ Until 1.0.0, the minor version is the feature counter — see the
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-07-17
+
+Camera details, and Street View — two features, one branch.
+
+### Added
+
+- **Camera details (EXIF).** A new plugin adds a **Camera** section to the
+  lightbox info panel showing what Synology reads but never displays: camera,
+  lens, focal length, aperture, shutter and ISO. On by default — the data is
+  already in the payload the page fetched, so showing it sends nothing anywhere.
+- **Street View** — a 🧍 button beside the location opens a Google Street View
+  panorama. A dedicated button, not a dropdown choice: you keep your map _and_
+  get Street View, rather than picking one. Always offered (like the address, it
+  contacts a third party only on click), so no toggle. Not every spot has
+  imagery, so it is best-effort where a map always works.
+
+### Notes
+
+- The EXIF values are displayed **exactly as Synology returns them** (`F1.8`,
+  `1/60 s`, `6.9 mm`) — Synology pre-formats them, so reformatting would only
+  risk mangling what is already right. The fixtures in the tests are real values
+  captured from a live library, not invented ones.
+- The camera section is keyed to the photo id, so moving between photos never
+  shows one photo's settings under another's.
+- Both features grew from a single payload capture that turned out to carry far
+  more than expected — `additional` also exposes a structured `address`,
+  `rating`, `person` and `tag`, noted in `docs/ARCHITECTURE.md` §8 for later.
+
 ## [0.4.0] — 2026-07-17
 
 A map preview in the lightbox — and `locationLink` grows into `location`.
@@ -180,7 +208,8 @@ that features plug into. The first one (Google Maps) lands in 0.2.0.
   [§8 of the architecture doc](docs/ARCHITECTURE.md#8-what-we-do-not-know) —
   chiefly whether the timeline lightbox routes at all.
 
-[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.1.0...v0.2.0

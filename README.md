@@ -14,9 +14,9 @@ This extension adds those things from the browser, as plugins. It talks only to
 your NAS, over your own session — nothing is installed on the NAS, nothing is
 sent anywhere else.
 
-> **Status: v0.4.0.**
-> The photo's location is clickable, and an optional 🗺 button previews it on a
-> map in the lightbox. Features land one per release; see the [roadmap](#roadmap).
+> **Status: v0.5.0.**
+> Clickable location (Google Maps, OpenStreetMap or Street View), an optional
+> map preview, and the full camera EXIF in the info panel. See the [roadmap](#roadmap).
 
 ---
 
@@ -39,14 +39,14 @@ sent anywhere else.
 | ------------------ | ------- | ----------------------------------------------------- | ------- |
 | Clickable location | v0.2.0  | The photo's location opens in a map.                  | ✅      |
 | OpenStreetMap      | v0.3.0  | OSM as an alternative to Google Maps, from the popup. | ✅      |
-| Mini map           | v0.4.0  | An inline map preview in the lightbox info panel.     | Planned |
-| Advanced EXIF      | v0.5.0  | The full EXIF payload, not Synology's subset.         | Planned |
-| Street View        | v0.6.0  | Opens the shooting location in Street View.           | Planned |
+| Map preview        | v0.4.0  | An on-demand, zoomable map preview in the lightbox.   | ✅      |
+| Advanced EXIF      | v0.5.0  | The full camera EXIF in the info panel.               | ✅      |
+| Street View        | v0.5.0  | A Street View option in the location dropdown.        | ✅      |
 | World map          | v0.7.0  | Every geotagged photo in your library on one map.     | Planned |
 | Statistics         | v0.8.0  | Counts by camera, lens, year, place.                  | Planned |
 
-Each is an independent plugin, individually toggleable from the popup, and each
-works in both the personal and shared libraries.
+Each is individually toggleable from the popup, and works in both the personal
+and shared libraries.
 
 ## Screenshots
 
@@ -199,9 +199,8 @@ Writing a plugin is a folder and one line: **[CONTRIBUTING.md](CONTRIBUTING.md)*
 | v0.2.0  | Google Maps — clickable location                | ✅      |
 | v0.3.0  | OpenStreetMap                                   | ✅      |
 | v0.4.0  | Mini map in the lightbox                        | ✅      |
-| v0.5.0  | Advanced EXIF                                   | Next    |
-| v0.6.0  | Street View (a `locationLink` provider)         | Planned |
-| v0.7.0  | World map of the whole library                  | Planned |
+| v0.5.0  | Advanced EXIF + Street View                     | ✅      |
+| v0.7.0  | World map of the whole library                  | Next    |
 | v0.8.0  | Statistics                                      | Planned |
 
 Beyond that: Chrome Web Store publication, i18n, and possibly Firefox.

@@ -10,6 +10,20 @@
  * convenient than what the NAS actually sends, the tests stop testing reality.
  */
 
+/**
+ * An `additional.exif` block captured verbatim from a live library
+ * (2026-07-17). Every value is a pre-formatted string, units included — this is
+ * how Synology returns EXIF, not how we wish it were.
+ */
+export const REAL_EXIF = {
+  aperture: 'F1.8',
+  camera: 'iPhone 14 Pro Max',
+  exposure_time: '1/60 s',
+  focal_length: '6.9 mm',
+  iso: '160',
+  lens: 'iPhone 14 Pro Max back triple camera 6.86mm f/1.78',
+};
+
 /** A single-item response: the lightbox loading the photo the user just opened. */
 export const singleItemWithGps = {
   success: true,
@@ -28,6 +42,9 @@ export const singleItemWithGps = {
           gps: { latitude: 48.85837, longitude: 2.294481 },
           resolution: { width: 4032, height: 3024 },
           thumbnail: { cache_key: '44246_1720000000', unit_id: 44_246 },
+          /* Verbatim from a live library (2026-07-17): Synology returns every
+           * EXIF value pre-formatted as a string, units included. */
+          exif: REAL_EXIF,
         },
       },
     ],

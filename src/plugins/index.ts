@@ -1,6 +1,7 @@
 import type { Plugin } from '@/core/plugin';
 
 import devProbe from './devProbe';
+import exif from './exif';
 import location from './location';
 
 /**
@@ -32,9 +33,9 @@ import location from './location';
 export const plugins: readonly Plugin[] = [
   devProbe,
   location,
+  exif,
 
   /* Coming per the roadmap — each lands as its own folder + one line here:
-   *   v0.5.0  exif
    *   v0.8.0  statistics
    * They are deliberately absent rather than stubbed: an empty folder is dead
    * code that has to be maintained and explained until the day it is filled.
