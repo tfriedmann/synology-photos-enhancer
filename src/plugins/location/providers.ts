@@ -58,6 +58,23 @@ const openStreetMap: MapProvider = {
 
 export const MAP_PROVIDERS: readonly MapProvider[] = [google, openStreetMap];
 
+/**
+ * A Google Street View panorama at the point, via the documented Maps URL
+ * `pano` action.
+ *
+ * Not a provider — a standalone action, opened from its own button rather than
+ * chosen in the "Open in" dropdown. Two reasons it does not belong in that list:
+ * the dropdown is an *exclusive* choice (you would get Street View **instead of**
+ * a map, not as well), and Street View is a different kind of thing — a ground
+ * view, not a map. It also has no imagery everywhere (open sea, uncovered
+ * regions), so it is best-effort where a map always works.
+ */
+export function streetViewUrl(gps: SynoGps): string {
+  return `https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${encodeURIComponent(
+    `${String(gps.latitude)},${String(gps.longitude)}`,
+  )}`;
+}
+
 export const DEFAULT_PROVIDER_ID = google.id;
 
 /** The plugin's persisted options. */

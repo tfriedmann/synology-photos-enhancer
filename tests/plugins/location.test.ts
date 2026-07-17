@@ -11,6 +11,7 @@ import {
   MAP_PROVIDERS,
   parseOptions,
   resolveProvider,
+  streetViewUrl,
 } from '@/plugins/location/providers';
 import type { AppEventMap } from '@/types/events';
 import type { SynoGps } from '@/types/synology';
@@ -21,6 +22,10 @@ const ADDRESS_TEXT = '1 Rue de Rivoli, Paris';
 
 const GOOGLE_PARIS = 'https://www.google.com/maps/search/?api=1&query=48.8566%2C2.3522';
 const OSM_PARIS = 'https://www.openstreetmap.org/?mlat=48.8566&mlon=2.3522#map=17/48.8566/2.3522';
+const STREETVIEW_PARIS =
+  'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=48.8566%2C2.3522';
+const STREETVIEW_TOKYO =
+  'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=35.6762%2C139.6503';
 
 function renderPanel(addressText = ADDRESS_TEXT): HTMLElement {
   document.body.innerHTML = `
@@ -109,6 +114,14 @@ describe('providers', () => {
 
   it('builds an OpenStreetMap URL with both a marker and a view', () => {
     expect(resolveProvider({ provider: 'osm' }).buildUrl(PARIS)).toBe(OSM_PARIS);
+  });
+
+  it('builds a Street View pano URL', () => {
+    expect(streetViewUrl(PARIS)).toBe(STREETVIEW_PARIS);
+  });
+
+  it('offers only maps in the dropdown — Street View is a button, not a provider', () => {
+    expect(MAP_PROVIDERS.map((p) => p.id)).toEqual(['google', 'osm']);
   });
 
   it('every provider has a unique id', () => {
@@ -313,6 +326,109 @@ describe('the clickable address', () => {
   });
 });
 
+describe('the Street View button', () => {
+  const svButton = (): HTMLButtonElement | null =>
+    document.querySelector('.spe-location-streetview-button');
+
+  it('appears beside the address for a geotagged photo, without any option', () => {
+    /* Always offered — no config toggle. Unlike the preview it contacts a third
+     * party only on click, like the address link itself. */
+    const address = renderPanel();
+    const { photoChanged } = setup();
+
+    photoChanged(PARIS);
+
+    expect(svButton()).not.toBeNull();
+    expect(address.nextElementSibling).toBe(svButton());
+  });
+
+  it('does not appear for a photo with no location', () => {
+    renderPanel();
+    const { photoChanged } = setup();
+
+    photoChanged(undefined);
+
+    expect(svButton()).toBeNull();
+  });
+
+  it('opens the Street View panorama at the photo location', () => {
+    renderPanel();
+    const { photoChanged, openSpy } = setup();
+    photoChanged(PARIS);
+
+    svButton()?.click();
+
+    expect(openSpy).toHaveBeenCalledExactlyOnceWith(
+      STREETVIEW_PARIS,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it('opens the current photo, not the previous one', () => {
+    renderPanel();
+    const { photoChanged, openSpy } = setup();
+    photoChanged(PARIS);
+    photoChanged(TOKYO);
+
+    svButton()?.click();
+
+    expect(openSpy).toHaveBeenCalledExactlyOnceWith(
+      STREETVIEW_TOKYO,
+      '_blank',
+      'noopener,noreferrer',
+    );
+  });
+
+  it("does not reach Synology's click handlers", () => {
+    renderPanel();
+    const ancestorClick = vi.fn();
+    document.body.addEventListener('click', ancestorClick);
+    const { photoChanged } = setup();
+    photoChanged(PARIS);
+
+    svButton()?.click();
+
+    expect(ancestorClick).not.toHaveBeenCalled();
+    document.body.removeEventListener('click', ancestorClick);
+  });
+
+  it('coexists with the preview button, address first', () => {
+    /* The row reads: address · 🧍 Street View · 🗺 preview. */
+    const address = renderPanel();
+    const { photoChanged } = setup({ preview: true });
+    photoChanged(PARIS);
+
+    expect(svButton()).not.toBeNull();
+    expect(document.querySelector('.spe-location-preview-button')).not.toBeNull();
+    expect(address.nextElementSibling).toBe(svButton());
+  });
+
+  it('is re-added after React rebuilds the row', () => {
+    renderPanel();
+    const { photoChanged, mutate } = setup();
+    photoChanged(PARIS);
+    expect(svButton()).not.toBeNull();
+
+    renderPanel();
+    mutate();
+
+    expect(svButton()).not.toBeNull();
+    expect(document.querySelectorAll('.spe-location-streetview-button')).toHaveLength(1);
+  });
+
+  it('is removed on teardown', () => {
+    renderPanel();
+    const { photoChanged } = setup();
+    photoChanged(PARIS);
+    expect(svButton()).not.toBeNull();
+
+    void location.teardown?.();
+
+    expect(svButton()).toBeNull();
+  });
+});
+
 describe('the map preview', () => {
   it('adds no button when preview is off (the default)', () => {
     renderPanel();
@@ -324,13 +440,16 @@ describe('the map preview', () => {
   });
 
   it('adds the button beside the address when preview is on', () => {
-    const address = renderPanel();
+    renderPanel();
     const { photoChanged } = setup({ preview: true });
 
     photoChanged(PARIS);
 
+    /* Both buttons sit after the address; Street View is closest, preview next. */
     expect(previewButton()).not.toBeNull();
-    expect(address.nextElementSibling).toBe(previewButton());
+    expect(document.querySelector('.spe-location-streetview-button')?.nextElementSibling).toBe(
+      previewButton(),
+    );
   });
 
   it('adds no button for a photo with no location', () => {

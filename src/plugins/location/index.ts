@@ -7,29 +7,30 @@ import { createPopup, type Popup } from '@/ui/popup';
 import { el, markOnce } from '@/utils/dom';
 
 import { buildMapElement } from './mapView';
-import { MAP_PROVIDERS, parseOptions, resolveProvider } from './providers';
+import { MAP_PROVIDERS, parseOptions, resolveProvider, streetViewUrl } from './providers';
 
 /**
  * Everything about a photo's location, in one plugin.
  *
- * It does two things:
+ * It does three things, all anchored on the lightbox address line:
  *
  * - **Makes the address clickable** — click it, the location opens in your
  *   chosen map (Google or OpenStreetMap) in a new tab.
- * - **Previews the location** — an optional 🗺 button beside the address opens
- *   an in-page map.
+ * - **Opens Street View** — a 🧍 button beside the address opens a Google
+ *   Street View panorama. Always present (it sends nothing before the click,
+ *   like the address itself).
+ * - **Previews the location** — an *optional* 🗺 button opens an in-page map.
+ *   Off by default, because it fetches tiles from a third party on open.
  *
- * ## Why one plugin, not two
+ * ## Why one plugin, not several
  *
- * These began as `locationLink` and `miniMap`. They are back together because
- * they must **share one setting**: the map provider. A plugin cannot read
- * another plugin's options — that is the coupling the architecture forbids — so
- * two plugins sharing a preference is the same smell as two plugins fighting
- * over a node (see `docs/ARCHITECTURE.md` §6). "The photo's location" is one
- * feature with two presentations, not two features.
- *
- * A single plugin owning two nodes (the address text and the 🗺 button) is fine;
- * the rule only forbids *two plugins* owning the *same* node.
+ * The clickable address and the map preview began as `locationLink` and
+ * `miniMap`, and merged because they must **share one setting** — the map
+ * provider — which a plugin cannot read from another plugin (see
+ * `docs/ARCHITECTURE.md` §6). Street View joins them because it is another
+ * action on the *same* address anchor: three buttons on one line, one owner.
+ * A single plugin owning several nodes is fine; the rule only forbids *two
+ * plugins* owning the *same* node.
  *
  * ## Why the plugin never destroys Synology's DOM
  *
@@ -38,7 +39,7 @@ import { MAP_PROVIDERS, parseOptions, resolveProvider } from './providers';
  * nothing we hold can go stale when React reuses the node and swaps only the
  * text. Replacing its contents with an `<a>` would destroy the address, point
  * at the previous photo after a change, and loop against React. Cost to their
- * DOM: one attribute, plus the sibling button.
+ * DOM: one attribute, plus the sibling buttons.
  *
  * ## Why the preview is opt-in
  *
@@ -50,10 +51,13 @@ import { MAP_PROVIDERS, parseOptions, resolveProvider } from './providers';
 
 const PLUGIN_ID = 'location';
 const CLICKABLE_CLASS = 'spe-location-clickable';
-const BUTTON_CLASS = 'spe-location-preview-button';
+/** Shared look for the icon buttons; the specific classes below are for targeting. */
+const ICON_BUTTON_CLASS = 'spe-location-icon-button';
+const PREVIEW_BUTTON_CLASS = 'spe-location-preview-button';
+const STREETVIEW_BUTTON_CLASS = 'spe-location-streetview-button';
 
-/* Injected into the page (light DOM) because both the clickable address and the
- * button live in Synology's tree. `spe-`-namespaced, per `pageStyles.ts`. */
+/* Injected into the page (light DOM) because the clickable address and both
+ * buttons live in Synology's tree. `spe-`-namespaced, per `pageStyles.ts`. */
 const PAGE_STYLES = `
 .${CLICKABLE_CLASS} {
   cursor: pointer;
@@ -71,7 +75,7 @@ const PAGE_STYLES = `
   outline: 2px solid #2b7cff;
   outline-offset: 2px;
 }
-.${BUTTON_CLASS} {
+.${ICON_BUTTON_CLASS} {
   display: inline-flex;
   align-items: center;
   margin-left: 6px;
@@ -83,10 +87,10 @@ const PAGE_STYLES = `
   cursor: pointer;
   opacity: 0.75;
 }
-.${BUTTON_CLASS}:hover {
+.${ICON_BUTTON_CLASS}:hover {
   opacity: 1;
 }
-.${BUTTON_CLASS}:focus-visible {
+.${ICON_BUTTON_CLASS}:focus-visible {
   outline: 2px solid #2b7cff;
   outline-offset: 2px;
   border-radius: 3px;
@@ -213,14 +217,44 @@ export default definePlugin({
       log.debug('Preview opened');
     };
 
-    const onButtonClick = (event: Event, anchor: HTMLElement): void => {
-      event.stopPropagation();
-      event.preventDefault();
+    const togglePreview = (anchor: HTMLElement): void => {
       if (popup?.visible) {
         popup.hide();
         return;
       }
       showPreview(anchor);
+    };
+
+    // ----------------------------------------------------------- street view
+    const openStreetView = (): void => {
+      if (!gps) return;
+      const url = streetViewUrl(gps);
+      log.debug('Opening Street View', url);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
+    /** Builds one of the two icon buttons beside the address. */
+    const iconButton = (
+      specificClass: string,
+      icon: string,
+      label: string,
+      onActivate: () => void,
+    ): HTMLButtonElement => {
+      const button = el('button', {
+        className: `${ICON_BUTTON_CLASS} ${specificClass}`,
+        text: icon,
+        attrs: { type: 'button', 'aria-label': label, title: label },
+      });
+      button.addEventListener('click', (event) => {
+        /* Stop Synology's ancestor panel handlers from also firing. */
+        event.stopPropagation();
+        event.preventDefault();
+        onActivate();
+      });
+      button.addEventListener('keydown', (event: KeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+      });
+      return button;
     };
 
     // ------------------------------------------------------------ wiring up
@@ -256,25 +290,37 @@ export default definePlugin({
       }
 
       /* `markOnce` on the address is the "does my button already sit here?"
-       * check, keyed to the live node so a rebuilt panel gets a fresh button. */
+       * check, keyed to the live node so a rebuilt panel gets a fresh one.
+       *
+       * Street View is always offered — like the address, it reaches a third
+       * party only on click. The map preview is opt-in, because it fetches
+       * tiles the moment it opens.
+       *
+       * `after()` puts the last-inserted node closest to the address, so the
+       * preview block runs first and the Street View block second to give a
+       * stable row: address · 🧍 · 🗺. */
       if (preview && markOnce(address, 'preview')) {
-        const button = el('button', {
-          className: BUTTON_CLASS,
-          text: '🗺',
-          attrs: {
-            type: 'button',
-            'aria-label': 'Preview location on a map',
-            title: 'Preview on map',
+        const previewButton = iconButton(
+          PREVIEW_BUTTON_CLASS,
+          '🗺',
+          'Preview location on a map',
+          () => {
+            togglePreview(previewButton);
           },
-        });
-        button.addEventListener('click', (event) => {
-          onButtonClick(event, button);
-        });
-        button.addEventListener('keydown', (event: KeyboardEvent) => {
-          if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
-        });
-        address.after(button);
+        );
+        address.after(previewButton);
         log.debug('Preview button added');
+      }
+
+      if (markOnce(address, 'streetview')) {
+        const svButton = iconButton(
+          STREETVIEW_BUTTON_CLASS,
+          '🧍',
+          'Open in Street View',
+          openStreetView,
+        );
+        address.after(svButton);
+        log.debug('Street View button added');
       }
     };
 
@@ -301,11 +347,14 @@ export default definePlugin({
       node.removeAttribute('role');
       node.removeAttribute('tabindex');
     }
-    for (const button of document.querySelectorAll(`.${BUTTON_CLASS}`)) {
+    for (const button of document.querySelectorAll(`.${ICON_BUTTON_CLASS}`)) {
       button.remove();
     }
-    for (const marked of document.querySelectorAll<HTMLElement>('[data-spe-preview]')) {
+    for (const marked of document.querySelectorAll<HTMLElement>(
+      '[data-spe-preview], [data-spe-streetview]',
+    )) {
       delete marked.dataset['spePreview'];
+      delete marked.dataset['speStreetview'];
     }
   },
 

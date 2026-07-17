@@ -4,6 +4,7 @@ import {
   detectPhotoItemSpace,
   extractPhotoItems,
   isWebApiUrl,
+  parseExif,
   parseGps,
   parsePhotoItem,
 } from '@/api/synology';
@@ -13,6 +14,7 @@ import {
   errorResponse,
   listingResponse,
   PERSONAL_ITEM_URL,
+  REAL_EXIF,
   singleItemWithGps,
   TEAM_ITEM_URL,
   THUMBNAIL_URL,
@@ -127,6 +129,35 @@ describe('parseGps', () => {
     expect(parseGps({ latitude: '48.8', longitude: '2.2' })).toBeUndefined();
     expect(parseGps({ latitude: Number.NaN, longitude: 2 })).toBeUndefined();
     expect(parseGps('nope')).toBeUndefined();
+  });
+});
+
+describe('parseExif', () => {
+  it('keeps the real, pre-formatted values verbatim', () => {
+    /* Synology already formats these; reparsing them would only risk mangling
+     * what is correct. */
+    expect(parseExif(REAL_EXIF)).toEqual(REAL_EXIF);
+  });
+
+  it('accepts a bare number for a field, defensively', () => {
+    /* Some device or DSM version might not pre-format; a number must survive. */
+    const parsed = parseExif({ iso: 160, aperture: 'F1.8' });
+    expect(parsed?.iso).toBe(160);
+    expect(parsed?.aperture).toBe('F1.8');
+  });
+
+  it('drops empty and non-scalar fields', () => {
+    const parsed = parseExif({ camera: '  ', lens: 'Summicron', tag: { a: 1 }, iso: null });
+    expect(parsed).toEqual({ lens: 'Summicron' });
+  });
+
+  it('returns undefined when every field is empty or missing', () => {
+    /* An exif block with nothing usable is the same as no exif — the feature
+     * must not light up on it. */
+    expect(parseExif({ camera: '', iso: null })).toBeUndefined();
+    expect(parseExif({})).toBeUndefined();
+    expect(parseExif(undefined)).toBeUndefined();
+    expect(parseExif('nope')).toBeUndefined();
   });
 });
 
