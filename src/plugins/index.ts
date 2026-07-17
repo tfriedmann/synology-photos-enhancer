@@ -1,6 +1,7 @@
 import type { Plugin } from '@/core/plugin';
 
 import devProbe from './devProbe';
+import googleMaps from './googleMaps';
 
 /**
  * The plugin registry — the single list of everything that ships.
@@ -30,9 +31,9 @@ import devProbe from './devProbe';
  */
 export const plugins: readonly Plugin[] = [
   devProbe,
+  googleMaps,
 
   /* Coming per the roadmap — each one lands as its own folder + one line here:
-   *   v0.2.0  googleMaps
    *   v0.3.0  openStreetMap
    *   v0.4.0  miniMap
    *   v0.5.0  exif
