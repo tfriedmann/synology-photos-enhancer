@@ -35,3 +35,22 @@ export const SELECTORS = {
   /** Within a location block: the street address. The first line is the place name. */
   infoSecondLine: '.synofoto-lightbox-info-second-line',
 } as const;
+
+/**
+ * Finds the address line in the lightbox info panel.
+ *
+ * Lives here, not in a plugin, because it is shared Synology-DOM knowledge: the
+ * `location` plugin uses it to find the address, and any future plugin that
+ * works near the location will too. Plugins may not import each other, so it
+ * belongs in `api/` with the selectors it uses.
+ *
+ * Mirrors the app's structure: the location icon and the info block are
+ * siblings, so the address is reached through their shared parent. Returns
+ * `undefined` whenever any link in the chain is missing — the normal case for a
+ * photo with no location, not an error.
+ */
+export function findLightboxAddress(root: ParentNode = document): HTMLElement | undefined {
+  const indicator = root.querySelector(SELECTORS.locationIndicator);
+  const block = indicator?.parentElement?.querySelector(SELECTORS.infoBlock);
+  return block?.querySelector<HTMLElement>(SELECTORS.infoSecondLine) ?? undefined;
+}

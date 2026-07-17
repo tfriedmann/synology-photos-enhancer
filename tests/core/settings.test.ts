@@ -151,9 +151,9 @@ describe('createSettingsStore', () => {
       const store = createSettingsStore({ area: fakeArea(), initial: DEFAULT_SETTINGS });
       const value = { provider: 'osm', nested: { deep: [1, 2] } };
 
-      void store.setPluginOptions('location-link', value);
+      void store.setPluginOptions('location', value);
 
-      expect(store.getPluginOptions('location-link')).toEqual(value);
+      expect(store.getPluginOptions('location')).toEqual(value);
     });
 
     it("keeps other plugins' options", async () => {
