@@ -15,12 +15,23 @@ export interface Settings {
   readonly logLevel: LogLevel;
   /** Keyed by plugin id. Absent means "use the plugin's `enabledByDefault`". */
   readonly plugins: Readonly<Record<string, boolean>>;
+  /**
+   * Per-plugin options, keyed by plugin id, and **opaque to the core** —
+   * deliberately `unknown` rather than a union of every plugin's shape.
+   *
+   * The core storing `mapProvider: string` would mean the core knows a plugin
+   * exists, which is the one thing it must never do. Each plugin parses its own
+   * slice with its own guard, exactly as it would parse anything else it did
+   * not author.
+   */
+  readonly options: Readonly<Record<string, unknown>>;
 }
 
 /** `warn` keeps the console usable for the site's own debugging. */
 export const DEFAULT_SETTINGS: Settings = {
   logLevel: 'warn',
   plugins: {},
+  options: {},
 };
 
 const STORAGE_KEY = 'settings';
@@ -38,6 +49,9 @@ export interface SettingsStore {
   setPluginEnabled(id: string, enabled: boolean): Promise<void>;
   /** Falls back to `fallback` when the user has expressed no preference. */
   isPluginEnabled(id: string, fallback: boolean): boolean;
+  /** This plugin's stored options, unparsed. Narrow them yourself. */
+  getPluginOptions(id: string): unknown;
+  setPluginOptions(id: string, options: unknown): Promise<void>;
   /** Fires on external changes too, e.g. the popup writing while a tab is open. */
   subscribe(listener: (settings: Settings) => void): () => void;
 }
@@ -57,7 +71,15 @@ export function parseSettings(value: unknown): Settings {
     }
   }
 
-  return { logLevel, plugins };
+  /* Passed through untouched: the core cannot validate what it does not
+   * understand, and each plugin guards its own slice. */
+  const storedOptions = record['options'];
+  const options: Record<string, unknown> =
+    typeof storedOptions === 'object' && storedOptions !== null
+      ? { ...(storedOptions as Record<string, unknown>) }
+      : {};
+
+  return { logLevel, plugins, options };
 }
 
 export async function loadSettings(area: SettingsStorageArea): Promise<Settings> {
@@ -113,6 +135,11 @@ export function createSettingsStore(options: SettingsStoreOptions): SettingsStor
       persist({ ...current, plugins: { ...current.plugins, [id]: enabled } }),
 
     isPluginEnabled: (id, fallback) => current.plugins[id] ?? fallback,
+
+    getPluginOptions: (id) => current.options[id],
+
+    setPluginOptions: (id, options) =>
+      persist({ ...current, options: { ...current.options, [id]: options } }),
 
     subscribe: (listener) => {
       listeners.add(listener);

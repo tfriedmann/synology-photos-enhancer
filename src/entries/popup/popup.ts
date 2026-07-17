@@ -117,6 +117,12 @@ function renderPlugins(settings: SettingsStore): void {
       ],
     });
 
+    /* The plugin renders its own options; the popup never learns what they are.
+     * A hard-coded control per plugin here would put feature knowledge in the
+     * shell and grow a branch with every plugin. */
+    const options = plugin.renderOptions?.(settings);
+    if (options) label.append(options);
+
     pluginList.append(el('li', { className: 'plugin', children: [checkbox, label] }));
   }
 }

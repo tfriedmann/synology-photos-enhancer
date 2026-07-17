@@ -14,9 +14,9 @@ This extension adds those things from the browser, as plugins. It talks only to
 your NAS, over your own session — nothing is installed on the NAS, nothing is
 sent anywhere else.
 
-> **Status: v0.2.0 — first feature.**
-> The photo's location is now clickable and opens in Google Maps. Features land
-> one per release; see the [roadmap](#roadmap).
+> **Status: v0.3.0.**
+> The photo's location is clickable and opens in Google Maps or OpenStreetMap,
+> your choice. Features land one per release; see the [roadmap](#roadmap).
 
 ---
 
@@ -35,15 +35,15 @@ sent anywhere else.
 
 ## Features
 
-| Feature       | Version | What it does                                         | Status  |
-| ------------- | ------- | ---------------------------------------------------- | ------- |
-| Google Maps   | v0.2.0  | Makes the photo's location clickable, opens in Maps. | ✅      |
-| OpenStreetMap | v0.3.0  | Same, for people who prefer OSM.                     | Planned |
-| Mini map      | v0.4.0  | An inline map preview in the lightbox info panel.    | Planned |
-| Advanced EXIF | v0.5.0  | The full EXIF payload, not Synology's subset.        | Planned |
-| Street View   | v0.6.0  | Opens the shooting location in Street View.          | Planned |
-| World map     | v0.7.0  | Every geotagged photo in your library on one map.    | Planned |
-| Statistics    | v0.8.0  | Counts by camera, lens, year, place.                 | Planned |
+| Feature            | Version | What it does                                          | Status  |
+| ------------------ | ------- | ----------------------------------------------------- | ------- |
+| Clickable location | v0.2.0  | The photo's location opens in a map.                  | ✅      |
+| OpenStreetMap      | v0.3.0  | OSM as an alternative to Google Maps, from the popup. | ✅      |
+| Mini map           | v0.4.0  | An inline map preview in the lightbox info panel.     | Planned |
+| Advanced EXIF      | v0.5.0  | The full EXIF payload, not Synology's subset.         | Planned |
+| Street View        | v0.6.0  | Opens the shooting location in Street View.           | Planned |
+| World map          | v0.7.0  | Every geotagged photo in your library on one map.     | Planned |
+| Statistics         | v0.8.0  | Counts by camera, lens, year, place.                  | Planned |
 
 Each is an independent plugin, individually toggleable from the popup, and each
 works in both the personal and shared libraries.
@@ -197,10 +197,10 @@ Writing a plugin is a folder and one line: **[CONTRIBUTING.md](CONTRIBUTING.md)*
 | ------- | ----------------------------------------------- | ------- |
 | v0.1.0  | Architecture: plugin system, EventBus, XHR hook | ✅      |
 | v0.2.0  | Google Maps — clickable location                | ✅      |
-| v0.3.0  | OpenStreetMap                                   | Next    |
-| v0.4.0  | Mini map in the lightbox                        | Planned |
+| v0.3.0  | OpenStreetMap                                   | ✅      |
+| v0.4.0  | Mini map in the lightbox                        | Next    |
 | v0.5.0  | Advanced EXIF                                   | Planned |
-| v0.6.0  | Street View                                     | Planned |
+| v0.6.0  | Street View (a `locationLink` provider)         | Planned |
 | v0.7.0  | World map of the whole library                  | Planned |
 | v0.8.0  | Statistics                                      | Planned |
 
