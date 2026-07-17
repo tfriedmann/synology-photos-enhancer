@@ -4,13 +4,16 @@ import { el } from '@/utils/dom';
 import { layoutMap, TILE_SIZE } from './tiles';
 
 /**
- * Builds the preview's DOM: a tiled map, a centre marker, coordinates, an
- * "open larger" link, and the attribution OpenStreetMap's tile policy requires.
+ * Builds the preview's DOM: a zoomable tiled map, a centre marker, coordinates,
+ * an "open larger" link, and the attribution OpenStreetMap's tile policy
+ * requires.
  *
  * Kept apart from `index.ts` so the layout math (`tiles.ts`) and this rendering
  * can be reasoned about without the plugin lifecycle in the way. The tile
  * `<img>` elements created here are the only network request the plugin ever
- * makes, and only because the user clicked.
+ * makes, and only because the user clicked — including each zoom step, which is
+ * why zoom is a button press, not a wheel: one deliberate request at a time,
+ * never a burst.
  *
  * ## Two different providers, on purpose
  *
@@ -24,35 +27,32 @@ import { layoutMap, TILE_SIZE } from './tiles';
 
 const PREVIEW_WIDTH = 260;
 const PREVIEW_HEIGHT = 180;
+
 /* 15 shows a neighbourhood — close enough to place a photo, wide enough to
- * orient. */
-const ZOOM = 15;
+ * orient. The bounds keep zoom within what OSM's tiles cover (0–19), narrowed
+ * to a range that stays useful for a small preview. */
+export const DEFAULT_ZOOM = 15;
+export const MIN_ZOOM = 3;
+export const MAX_ZOOM = 19;
 
 function formatCoords(gps: SynoGps): string {
   return `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`;
 }
 
 /**
- * @param gps The point to preview.
- * @param openUrl Where "open larger" leads — the user's chosen provider, built
- * by the caller. Kept as a parameter so this module knows nothing about
- * providers.
+ * Holds a zoom level within the tile bounds.
+ *
+ * The +/- buttons also disable themselves at the limits, so through them this
+ * is belt-and-braces. It is the real guard for any future entry point that has
+ * no disabled state of its own — a keyboard shortcut, a wheel handler — so it
+ * stays, and is tested directly rather than only through the buttons.
  */
-export function buildMapElement(gps: SynoGps, openUrl: string): HTMLElement {
-  const layout = layoutMap({ gps, zoom: ZOOM, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT });
+export const clampZoom = (zoom: number): number => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
 
-  /* Clips the tiles to the viewport; the tiles are positioned absolutely inside. */
-  const canvas = el('div', {
-    className: 'spe-minimap-canvas',
-    style: {
-      position: 'relative',
-      width: `${String(PREVIEW_WIDTH)}px`,
-      height: `${String(PREVIEW_HEIGHT)}px`,
-      overflow: 'hidden',
-      borderRadius: '6px',
-      background: '#e8eaed',
-    },
-  });
+/** Paints the tiles and marker for one zoom level into `canvas`, replacing what was there. */
+function paintCanvas(canvas: HTMLElement, gps: SynoGps, zoom: number): void {
+  const layout = layoutMap({ gps, zoom, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT });
+  const nodes: Node[] = [];
 
   for (const placed of layout.tiles) {
     const tile = el('img', {
@@ -72,28 +72,106 @@ export function buildMapElement(gps: SynoGps, openUrl: string): HTMLElement {
       },
     });
     /* A blocked or failed tile (CSP, offline) must not leave a broken-image
-     * glyph; the coordinates and link below still do the job. */
+     * glyph; the coordinates and link still do the job. */
     tile.addEventListener('error', () => {
       tile.remove();
     });
-    canvas.append(tile);
+    nodes.push(tile);
   }
 
-  const marker = el('div', {
-    text: '📍',
-    attrs: { 'aria-hidden': 'true' },
+  /* The marker stays dead centre at every zoom, because the layout always
+   * recentres on the point. A preview of *this* photo does not pan. */
+  nodes.push(
+    el('div', {
+      text: '📍',
+      attrs: { 'aria-hidden': 'true' },
+      style: {
+        position: 'absolute',
+        left: `${String(layout.marker.left)}px`,
+        top: `${String(layout.marker.top)}px`,
+        /* The pin's tip, not its centre, marks the spot. */
+        transform: 'translate(-50%, -100%)',
+        fontSize: '20px',
+        lineHeight: '1',
+        pointerEvents: 'none',
+      },
+    }),
+  );
+
+  canvas.replaceChildren(...nodes);
+}
+
+/**
+ * @param gps The point to preview.
+ * @param openUrl Where "open larger" leads — the user's chosen provider, built
+ * by the caller. Kept as a parameter so this module knows nothing about
+ * providers.
+ */
+export function buildMapElement(gps: SynoGps, openUrl: string): HTMLElement {
+  let zoom = DEFAULT_ZOOM;
+
+  /* Clips the tiles to the viewport; the tiles are positioned absolutely inside. */
+  const canvas = el('div', {
+    className: 'spe-minimap-canvas',
     style: {
       position: 'absolute',
-      left: `${String(layout.marker.left)}px`,
-      top: `${String(layout.marker.top)}px`,
-      /* The pin's tip, not its centre, marks the spot. */
-      transform: 'translate(-50%, -100%)',
-      fontSize: '20px',
-      lineHeight: '1',
-      pointerEvents: 'none',
+      inset: '0',
+      overflow: 'hidden',
+      background: '#e8eaed',
     },
   });
-  canvas.append(marker);
+
+  const zoomButton = (label: string, delta: number, ariaLabel: string): HTMLButtonElement =>
+    el('button', {
+      className: 'spe-minimap-zoom',
+      text: label,
+      attrs: { type: 'button', 'aria-label': ariaLabel },
+    });
+
+  const zoomIn = zoomButton('+', 1, 'Zoom in');
+  const zoomOut = zoomButton('−', -1, 'Zoom out');
+
+  const syncButtons = (): void => {
+    zoomIn.disabled = zoom >= MAX_ZOOM;
+    zoomOut.disabled = zoom <= MIN_ZOOM;
+  };
+
+  const changeZoom =
+    (delta: number) =>
+    (event: Event): void => {
+      /* Keep the click inside the popup: it must not bubble to the toggle that
+       * opened the preview, nor to the dismiss-on-outside-click handler. */
+      event.stopPropagation();
+      event.preventDefault();
+      const next = clampZoom(zoom + delta);
+      if (next === zoom) return;
+      zoom = next;
+      paintCanvas(canvas, gps, zoom); // one deliberate tile request per press
+      syncButtons();
+    };
+
+  zoomIn.addEventListener('click', changeZoom(1));
+  zoomOut.addEventListener('click', changeZoom(-1));
+
+  paintCanvas(canvas, gps, zoom);
+  syncButtons();
+
+  const zoomControls = el('div', {
+    className: 'spe-minimap-zoom-controls',
+    children: [zoomIn, zoomOut],
+  });
+
+  const map = el('div', {
+    className: 'spe-minimap-map',
+    style: {
+      position: 'relative',
+      width: `${String(PREVIEW_WIDTH)}px`,
+      height: `${String(PREVIEW_HEIGHT)}px`,
+      borderRadius: '6px',
+      overflow: 'hidden',
+    },
+    children: [canvas, zoomControls],
+  });
 
   const coords = el('span', { className: 'spe-minimap-coords', text: formatCoords(gps) });
 
@@ -123,6 +201,6 @@ export function buildMapElement(gps: SynoGps, openUrl: string): HTMLElement {
   return el('div', {
     className: 'spe-minimap',
     style: { width: `${String(PREVIEW_WIDTH)}px` },
-    children: [canvas, footer, attribution],
+    children: [map, footer, attribution],
   });
 }

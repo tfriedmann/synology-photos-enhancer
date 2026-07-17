@@ -17,8 +17,10 @@ A map preview in the lightbox — and `locationLink` grows into `location`.
 ### Added
 
 - **Map preview.** A 🗺 button beside the location opens an in-page map centred
-  on the photo, with the coordinates, an "open larger" link and OpenStreetMap
-  attribution. Enable it from the **Location** row in the popup.
+  on the photo, with **+/- zoom**, the coordinates, an "open larger" link and
+  OpenStreetMap attribution. Enable it from the **Location** row in the popup.
+  Zoom is by button, not wheel — one deliberate tile request per press, never a
+  burst — and the map stays centred on the photo (it does not pan).
 - **The tiles come from OpenStreetMap, computed without a mapping library.**
   `src/plugins/location/tiles.ts` implements the standard Web Mercator
   projection (~40 lines), so the preview draws `<img>` tiles directly — no

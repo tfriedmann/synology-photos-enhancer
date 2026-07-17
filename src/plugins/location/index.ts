@@ -118,6 +118,38 @@ const SHADOW_STYLES = `
   color: var(--spe-color-text-muted);
   text-decoration: none;
 }
+.spe-minimap-zoom-controls {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.spe-minimap-zoom {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 92%);
+  color: #1c1c1e;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+}
+.spe-minimap-zoom:hover:not([disabled]) {
+  background: #fff;
+}
+.spe-minimap-zoom[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+.spe-minimap-zoom:focus-visible {
+  outline: 2px solid var(--spe-color-accent);
+  outline-offset: 1px;
+}
 `;
 
 /** Re-exported for tests; the traversal lives in `api/selectors.ts`. */

@@ -5,6 +5,7 @@ import { createLogger } from '@/core/logger';
 import type { PluginContext, PluginUi } from '@/core/plugin';
 import { createSettingsStore, DEFAULT_SETTINGS, type SettingsStore } from '@/core/settings';
 import location, { findAddressElement } from '@/plugins/location';
+import { clampZoom, DEFAULT_ZOOM, MAX_ZOOM, MIN_ZOOM } from '@/plugins/location/mapView';
 import {
   DEFAULT_PROVIDER_ID,
   MAP_PROVIDERS,
@@ -419,6 +420,113 @@ describe('the map preview', () => {
 
       expect(container.contains(tile)).toBe(false);
       expect(container.querySelector('.spe-minimap-coords')).not.toBeNull();
+    });
+  });
+
+  describe('clampZoom', () => {
+    /* Tested directly, not only through the buttons: it is the guard for any
+     * future entry point (keyboard, wheel) that lacks a disabled state. */
+    it('holds within the tile bounds', () => {
+      expect(clampZoom(MIN_ZOOM - 5)).toBe(MIN_ZOOM);
+      expect(clampZoom(MAX_ZOOM + 5)).toBe(MAX_ZOOM);
+      expect(clampZoom(DEFAULT_ZOOM)).toBe(DEFAULT_ZOOM);
+    });
+  });
+
+  describe('zoom', () => {
+    const zoomIn = (): HTMLButtonElement | null =>
+      container.querySelector('.spe-minimap-zoom[aria-label="Zoom in"]');
+    const zoomOut = (): HTMLButtonElement | null =>
+      container.querySelector('.spe-minimap-zoom[aria-label="Zoom out"]');
+    const tileZoom = (): string | undefined => {
+      /* The z in .../tile/{z}/{x}/{y}.png reflects the current zoom. */
+      const src = container.querySelector('img')?.getAttribute('src') ?? '';
+      return /openstreetmap\.org\/(\d+)\//.exec(src)?.[1];
+    };
+
+    const open = () => {
+      renderPanel();
+      const ctx = setup({ preview: true });
+      ctx.photoChanged(PARIS);
+      previewButton()?.click();
+      return ctx;
+    };
+
+    it('starts at the default zoom', () => {
+      open();
+      expect(tileZoom()).toBe('15');
+    });
+
+    it('zooms in and refetches tiles at the higher level', () => {
+      open();
+      zoomIn()?.click();
+      expect(tileZoom()).toBe('16');
+    });
+
+    it('zooms out', () => {
+      open();
+      zoomOut()?.click();
+      expect(tileZoom()).toBe('14');
+    });
+
+    it('keeps the marker centred after zooming', () => {
+      /* The preview recentres on the photo at every level — it never pans. */
+      open();
+      zoomIn()?.click();
+      const marker = [...container.querySelectorAll<HTMLElement>('.spe-minimap-canvas > div')].find(
+        (n) => n.textContent === '📍',
+      );
+      expect(marker?.style.left).toBe('130px');
+      expect(marker?.style.top).toBe('90px');
+    });
+
+    it('disables zoom-in at the maximum', () => {
+      open();
+      for (let i = 0; i < 40; i += 1) zoomIn()?.click();
+      expect(tileZoom()).toBe('19');
+      expect(zoomIn()?.disabled).toBe(true);
+      expect(zoomOut()?.disabled).toBe(false);
+    });
+
+    it('disables zoom-out at the minimum', () => {
+      open();
+      for (let i = 0; i < 40; i += 1) zoomOut()?.click();
+      expect(tileZoom()).toBe('3');
+      expect(zoomOut()?.disabled).toBe(true);
+    });
+
+    it('does not close the preview when a zoom button is clicked', () => {
+      /* The zoom click must not bubble to the toggle or the dismiss handler. */
+      open();
+      zoomIn()?.click();
+      expect(container.querySelector('.spe-minimap')).not.toBeNull();
+      expect(container.querySelector<HTMLElement>('.spe-popup')?.hidden).toBe(false);
+    });
+
+    it("keeps the zoom click away from Synology's handlers", () => {
+      /* The popup lives in the shadow root but its events still bubble to the
+       * document across the boundary, so a zoom click without stopPropagation
+       * would reach Synology's ancestor handlers (which close the lightbox). */
+      const ancestorClick = vi.fn();
+      document.body.addEventListener('click', ancestorClick);
+      open();
+
+      zoomIn()?.click();
+
+      expect(ancestorClick).not.toHaveBeenCalled();
+      document.body.removeEventListener('click', ancestorClick);
+    });
+
+    it('resets to the default zoom on a fresh preview', () => {
+      const ctx = open();
+      zoomIn()?.click();
+      zoomIn()?.click();
+      expect(tileZoom()).toBe('17');
+
+      /* Reopen for another photo: a new preview starts fresh. */
+      ctx.photoChanged(TOKYO);
+      previewButton()?.click();
+      expect(tileZoom()).toBe('15');
     });
   });
 
