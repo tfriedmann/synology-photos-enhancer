@@ -203,6 +203,31 @@ single `dispose()` that removes every trace of us.
 `mode: 'open'` because `closed` would only inconvenience _us_ while debugging —
 the page can already reach anything we render.
 
+### The one exception: augmenting Synology's UI in place
+
+The argument above covers UI we _render_. It does not cover a plugin that
+enhances a node Synology already owns — making their address line clickable, as
+`googleMaps` does. A shadow root cannot style a node in their tree, so
+`ui/pageStyles.ts` injects a stylesheet into the page.
+
+That is a real hole in the isolation, so it is fenced:
+
+- **Only `spe-`-namespaced selectors**, matching only classes we added
+  ourselves. Never a `.synofoto-*` selector — that is precisely the leakage the
+  shadow root exists to prevent, and a DSM update would silently restyle the app.
+- **A few rules, not a layout.** A plugin needing real UI renders into
+  `ctx.ui.container` instead.
+- **Removed on teardown**, via `signal`.
+
+And the companion rule, learned while writing that plugin: **never take
+ownership of Synology's children.** Replacing an element's contents fights React
+for a node React owns, destroys the original text, and goes stale when React
+reuses the node and swaps only the text — showing the new photo's address over
+the previous photo's coordinates. Add a class and a listener to their element;
+read your state at event time. `googleMaps` costs their DOM one attribute, and
+the tests that pin this down are in `tests/plugins/googleMaps.test.ts` under
+_never destroying Synology's DOM_.
+
 ---
 
 ## 6. Smaller decisions
@@ -314,15 +339,15 @@ nothing but your imagination. Capture real traffic first.
 
 ## Map of the code
 
-| Path       | Responsibility                                                                                                                              |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `entries/` | The 4 things Chrome loads. Thin wiring — logic lives below.                                                                                 |
-| `core/`    | EventBus, logger, router, observer, settings, plugin lifecycle. Knows nothing about plugins.                                                |
-| `bridge/`  | MAIN ↔ ISOLATED plumbing. The trust boundary.                                                                                               |
-| `api/`     | **The only Synology-aware layer.** Method names and payload shapes live here and nowhere else — when DSM changes, this is the blast radius. |
-| `ui/`      | Shadow-DOM primitives.                                                                                                                      |
-| `plugins/` | One folder per feature. Imported only by `entries/content-isolated.ts`.                                                                     |
-| `utils/`   | Pure helpers, no imports of ours.                                                                                                           |
+| Path       | Responsibility                                                                                                                                                                                  |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `entries/` | The 4 things Chrome loads. Thin wiring — logic lives below.                                                                                                                                     |
+| `core/`    | EventBus, logger, router, observer, settings, plugin lifecycle. Knows nothing about plugins.                                                                                                    |
+| `bridge/`  | MAIN ↔ ISOLATED plumbing. The trust boundary.                                                                                                                                                   |
+| `api/`     | **The only Synology-aware layer.** Method names and payload shapes (`synology.ts`) plus DOM selectors (`selectors.ts`) live here and nowhere else — when DSM changes, this is the blast radius. |
+| `ui/`      | Shadow-DOM primitives.                                                                                                                                                                          |
+| `plugins/` | One folder per feature. Imported only by `entries/content-isolated.ts`.                                                                                                                         |
+| `utils/`   | Pure helpers, no imports of ours.                                                                                                                                                               |
 
 **The invariant, restated:** `core/`, `bridge/`, `api/`, `ui/` and `utils/` must
 never import `plugins/`. ESLint fails the build if they try

@@ -10,24 +10,34 @@ Until 1.0.0, the minor version is the feature counter — see the
 
 ## [Unreleased]
 
-### Fixed
+## [0.2.0] — 2026-07-17
 
-- **The network bridge captured nothing.** The URL filter matched `'/webapi/'`
-  with a leading slash, but Synology Photos sends **relative** URLs
-  (`POST webapi/entry.cgi/SYNO.FotoTeam.Browse.Item`), so it matched nothing at
-  all — no `api:response`, no `photo:changed`, and no error to explain it. Now
-  matches `webapi/entry.cgi`, which covers the relative, absolute and
-  path-prefixed forms. Fixtures are now captured from a live NAS rather than
-  invented; the old invented ones let the tests pass while the extension saw
-  nothing.
-- **The popup reported "Not a web page" on every site.** With no host
-  permission, Chrome hides `tab.url` — so the popup could not read the URL it
-  needed in order to request that very origin. Added `activeTab`, which grants
-  access at the moment the icon is clicked and adds no install-time warning.
-- **The MAIN world bridge failed silently.** `onError` was a deliberate no-op to
-  keep the page's console clean; the result was that a broken bridge said
-  nothing at all. It now reports to `console.error`, which only ever fires when
-  the extension is already broken.
+The first feature, and the first proof the architecture pays off: it is one
+folder and one line in `src/plugins/index.ts`. The core did not change.
+
+### Added
+
+- **Google Maps plugin.** The photo's location becomes clickable and opens in
+  Google Maps. On by default; toggle it in the popup. Works in both the
+  personal and shared libraries.
+- **`src/api/selectors.ts`** — Synology's DOM selectors, centralised. When DSM
+  changes its markup, this is the blast radius. Class names only: Synology
+  localises its labels, so any text-based selector is broken outside its author's
+  language.
+- **`src/ui/pageStyles.ts`** — a narrow, documented exception to the
+  shadow-root rule, for plugins that augment Synology's own UI in place and so
+  must style a node inside their tree. `spe-`-namespaced selectors only, removed
+  on teardown.
+
+### Notes
+
+The plugin never touches Synology's DOM children. Replacing the address line's
+contents with an `<a>` — the obvious approach — destroys the address text, goes
+stale when React reuses a node and swaps only the text (showing the new photo's
+address over the _previous_ photo's coordinates), and starts a rewrite loop with
+React. Instead it adds a class, `role` and `tabindex` to their element and reads
+the GPS at click time, which makes staleness unrepresentable. Cost to Synology's
+DOM: one attribute.
 
 ## [0.1.0] — 2026-07-17
 
@@ -82,5 +92,6 @@ that features plug into. The first one (Google Maps) lands in 0.2.0.
   [§7 of the architecture doc](docs/ARCHITECTURE.md#7-what-we-do-not-know) —
   chiefly whether the timeline lightbox routes at all.
 
-[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/tfriedmann/synology-photos-enhancer/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/tfriedmann/synology-photos-enhancer/releases/tag/v0.1.0

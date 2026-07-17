@@ -2,7 +2,11 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Both long-lived branches. `dev` is where features land before a release,
+    # so it needs the same gate as `main` — a broken `dev` blocks everyone.
+    # Feature branches are covered by `pull_request` below, which avoids
+    # building every work-in-progress push twice.
+    branches: [main, dev]
   pull_request:
   workflow_dispatch:
 
