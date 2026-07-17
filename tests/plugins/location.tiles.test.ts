@@ -7,7 +7,7 @@ import {
   TILE_SIZE,
   tileAt,
   tileUrl,
-} from '@/plugins/miniMap/tiles';
+} from '@/plugins/location/tiles';
 
 const PARIS = { latitude: 48.8566, longitude: 2.3522 };
 

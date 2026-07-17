@@ -11,6 +11,15 @@ import { layoutMap, TILE_SIZE } from './tiles';
  * can be reasoned about without the plugin lifecycle in the way. The tile
  * `<img>` elements created here are the only network request the plugin ever
  * makes, and only because the user clicked.
+ *
+ * ## Two different providers, on purpose
+ *
+ * The tiles are **always** OpenStreetMap's: they are the only free, keyless
+ * tile source, so a viewer picking "Google Maps" still sees OSM tiles here.
+ * But the **"open larger" link** follows the user's chosen provider (`openUrl`),
+ * so clicking through lands them in the map they asked for. Showing OSM tiles
+ * and linking to Google is not an inconsistency to hide — it is the honest best
+ * of both, and the attribution makes the tile source clear.
  */
 
 const PREVIEW_WIDTH = 260;
@@ -23,14 +32,13 @@ function formatCoords(gps: SynoGps): string {
   return `${gps.latitude.toFixed(5)}, ${gps.longitude.toFixed(5)}`;
 }
 
-/** The osm.org page centred on the point, for the "open larger" link. */
-function osmPageUrl(gps: SynoGps): string {
-  const lat = String(gps.latitude);
-  const lon = String(gps.longitude);
-  return `https://www.openstreetmap.org/?mlat=${lat}&mlon=${lon}#map=${String(ZOOM)}/${lat}/${lon}`;
-}
-
-export function buildMapElement(gps: SynoGps): HTMLElement {
+/**
+ * @param gps The point to preview.
+ * @param openUrl Where "open larger" leads — the user's chosen provider, built
+ * by the caller. Kept as a parameter so this module knows nothing about
+ * providers.
+ */
+export function buildMapElement(gps: SynoGps, openUrl: string): HTMLElement {
   const layout = layoutMap({ gps, zoom: ZOOM, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT });
 
   /* Clips the tiles to the viewport; the tiles are positioned absolutely inside. */
@@ -92,7 +100,7 @@ export function buildMapElement(gps: SynoGps): HTMLElement {
   const openLarger = el('a', {
     className: 'spe-minimap-open',
     text: 'Open larger ↗',
-    attrs: { href: osmPageUrl(gps), target: '_blank', rel: 'noopener noreferrer' },
+    attrs: { href: openUrl, target: '_blank', rel: 'noopener noreferrer' },
   });
 
   /* Required by OSM's tile usage policy, and only fair. */

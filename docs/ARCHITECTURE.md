@@ -247,19 +247,25 @@ So `googleMaps` became `locationLink`: the plugin owns the element, and a map is
 data — a name and a `gps => url` function in `providers.ts`. Adding one is four
 lines and cannot conflict with anything.
 
-**It applies again, and it cuts both ways.** Street View (roadmap v0.6.0)
-targets the same element — the address text — so it is a provider of
-`locationLink`, not a plugin. The mini map (v0.4.0) is also "about the
-location", but it owns a _different_ node: a 🗺 button it adds _beside_ the
-address. Same subject, different node, so it is its own plugin — and the two
-coexist without knowing about each other (`locationLink` owns the text,
-`miniMap` owns the button). Subject matter is not the test; node ownership is.
+**It applies again.** Street View (roadmap v0.6.0) targets the same element —
+the address text — so it is a provider of `location`, not a plugin.
 
-**How to tell.** Ask what the plugin _owns_. Two plugins wanting to own the same
-node is the smell. Two plugins reading the same event is fine — that is what the
-bus is for. And when two plugins need the same _information_ from the DOM — both
-must find the address — that shared traversal goes in `api/`
-(`findLightboxAddress`), never imported plugin-to-plugin.
+**The second signal: a shared setting.** The mini map (v0.4.0) looked like a
+separate plugin at first — it owns a _different_ node, a 🗺 button beside the
+address, so node ownership alone would allow it. But it must share the **map
+provider** setting with the link, and a plugin cannot read another plugin's
+options (that is the coupling the whole design forbids). So it folded into
+`location` too. Two plugins that must share a preference are one feature, just
+as surely as two plugins fighting over a node. `location` now owns two nodes —
+the address text and the button — which is fine: the rule forbids two _plugins_
+owning the same node, not one plugin owning two.
+
+**How to tell.** Ask what the plugin _owns_ and what it must _share_. Two
+plugins wanting the same node is the smell; so is two plugins needing the same
+setting. Two plugins reading the same event is fine — that is what the bus is
+for. And when plugins need the same _information_ from the DOM, that shared
+traversal goes in `api/` (`findLightboxAddress`), never imported
+plugin-to-plugin.
 
 ### Per-plugin options
 

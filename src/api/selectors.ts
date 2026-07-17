@@ -39,10 +39,10 @@ export const SELECTORS = {
 /**
  * Finds the address line in the lightbox info panel.
  *
- * Lives here, not in a plugin, because more than one plugin needs it —
- * `locationLink` makes it clickable, `miniMap` anchors a preview beside it — and
- * plugins may not import each other. This is shared Synology-DOM knowledge, so
- * it belongs in `api/` with the selectors it uses.
+ * Lives here, not in a plugin, because it is shared Synology-DOM knowledge: the
+ * `location` plugin uses it to find the address, and any future plugin that
+ * works near the location will too. Plugins may not import each other, so it
+ * belongs in `api/` with the selectors it uses.
  *
  * Mirrors the app's structure: the location icon and the info block are
  * siblings, so the address is reached through their shared parent. Returns

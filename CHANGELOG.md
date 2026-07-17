@@ -12,34 +12,49 @@ Until 1.0.0, the minor version is the feature counter — see the
 
 ## [0.4.0] — 2026-07-17
 
-A map preview in the lightbox — kept honest about what it sends where.
+A map preview in the lightbox — and `locationLink` grows into `location`.
 
 ### Added
 
-- **Mini map plugin.** Adds a 🗺 button beside the location. Click it for an
-  in-page map preview centred on the photo, with the coordinates, an "open
-  larger" link and OpenStreetMap attribution.
-- **The map tiles come from OpenStreetMap, computed without a mapping library.**
-  `src/plugins/miniMap/tiles.ts` implements the standard Web Mercator
+- **Map preview.** A 🗺 button beside the location opens an in-page map centred
+  on the photo, with the coordinates, an "open larger" link and OpenStreetMap
+  attribution. Enable it from the **Location** row in the popup.
+- **The tiles come from OpenStreetMap, computed without a mapping library.**
+  `src/plugins/location/tiles.ts` implements the standard Web Mercator
   projection (~40 lines), so the preview draws `<img>` tiles directly — no
   Leaflet, no runtime dependency, no API key.
-- **`findLightboxAddress` moved to `src/api/selectors.ts`.** Both `locationLink`
-  and `miniMap` need the address element, and plugins may not import each other,
-  so the shared Synology-DOM traversal lives in `api/` with the selectors.
+- **`findLightboxAddress` moved to `src/api/selectors.ts`** — shared
+  Synology-DOM knowledge, since plugins may not import each other.
+
+### Changed
+
+- **`locationLink` is now `location`, and absorbs the map preview.**
+
+  These were going to be two plugins — a link and a mini map. They cannot be,
+  for the same reason `openStreetMap` could not be its own plugin in 0.3.0: they
+  must **share one setting**, the map provider, and a plugin cannot read another
+  plugin's options. Two plugins that must share a preference are one feature.
+
+  So one plugin owns the address text (click → open in Google or OSM) _and_ the
+  🗺 button beside it (click → preview). A single plugin owning two nodes is fine;
+  the rule only forbids two plugins owning the same node.
+
+  The preview's tiles are always OSM's — the only free, keyless source — but its
+  "open larger" link follows your chosen provider. OSM tiles, a Google link if
+  that is what you picked: the honest best of both.
+
+  Breaking: the plugin id changed from `location-link` to `location`, so the
+  provider preference resets once.
 
 ### Notes
 
-- **On demand, and off by default.** A map means fetching tiles from a third
-  party. Rendering inline would send the coordinates of every geotagged photo
-  you view to OpenStreetMap automatically — quietly breaking the "nothing is
-  sent anywhere" promise. So the tile request happens only when you click, and
-  the plugin ships disabled. Enable it in the popup.
+- **The preview is off by default and loads on demand.** A map means fetching
+  tiles from a third party. Rendering it automatically would send the location
+  of every geotagged photo you view to OpenStreetMap — quietly breaking the
+  "nothing is sent anywhere" promise. So the button is opt-in and the only tile
+  request happens on click.
 - **Robust to a strict CSP.** If Synology's `img-src` blocks the tiles, each
   failed tile is removed and the popup still shows the coordinates and the link.
-  The map is a bonus, never the whole thing.
-- Two plugins now share the address line: `locationLink` owns the text (opens a
-  map in a tab), `miniMap` owns the 🗺 button beside it (opens the preview).
-  Different nodes, no conflict — the ownership rule from §6 in action.
 
 ## [0.3.0] — 2026-07-17
 

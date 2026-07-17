@@ -1,8 +1,7 @@
 import type { Plugin } from '@/core/plugin';
 
 import devProbe from './devProbe';
-import locationLink from './locationLink';
-import miniMap from './miniMap';
+import location from './location';
 
 /**
  * The plugin registry — the single list of everything that ships.
@@ -32,8 +31,7 @@ import miniMap from './miniMap';
  */
 export const plugins: readonly Plugin[] = [
   devProbe,
-  locationLink,
-  miniMap,
+  location,
 
   /* Coming per the roadmap — each lands as its own folder + one line here:
    *   v0.5.0  exif
@@ -42,9 +40,9 @@ export const plugins: readonly Plugin[] = [
    * code that has to be maintained and explained until the day it is filled.
    *
    * Note what is *not* on this list. Street View (v0.6.0) targets the same
-   * element as `locationLink` and would fight it for ownership, exactly as a
+   * element as `location` and would fight it for ownership, exactly as a
    * separate `openStreetMap` plugin would have. It belongs in
-   * `locationLink/providers.ts` as data, not here as a plugin. When a "feature"
-   * wants a node another plugin already owns, that is the signal it is not a
-   * separate plugin. */
+   * `location/providers.ts` as a provider, not here as a plugin. When a
+   * "feature" wants a node another plugin already owns, that is the signal it is
+   * not a separate plugin. */
 ];
