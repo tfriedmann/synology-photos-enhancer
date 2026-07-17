@@ -14,16 +14,15 @@ This extension adds those things from the browser, as plugins. It talks only to
 your NAS, over your own session — nothing is installed on the NAS, nothing is
 sent anywhere else.
 
-> **Status: v0.1.0 — architecture only.**
-> This release ships the foundation and deliberately **no user-facing feature**.
-> Features land one per release, starting with Google Maps in v0.2.0. See the
-> [roadmap](#roadmap).
+> **Status: v0.2.0 — first feature.**
+> The photo's location is now clickable and opens in Google Maps. Features land
+> one per release; see the [roadmap](#roadmap).
 
 ---
 
 ## Contents
 
-- [Planned features](#planned-features)
+- [Features](#features)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
 - [Permissions](#permissions-and-privacy)
@@ -34,28 +33,28 @@ sent anywhere else.
 - [Contributing](#contributing)
 - [License](#license)
 
-## Planned features
+## Features
 
-| Feature       | Version | What it does                                         |
-| ------------- | ------- | ---------------------------------------------------- |
-| Google Maps   | v0.2.0  | Makes the photo's location clickable, opens in Maps. |
-| OpenStreetMap | v0.3.0  | Same, for people who prefer OSM.                     |
-| Mini map      | v0.4.0  | An inline map preview in the lightbox info panel.    |
-| Advanced EXIF | v0.5.0  | The full EXIF payload, not Synology's subset.        |
-| Street View   | v0.6.0  | Opens the shooting location in Street View.          |
-| World map     | v0.7.0  | Every geotagged photo in your library on one map.    |
-| Statistics    | v0.8.0  | Counts by camera, lens, year, place.                 |
+| Feature       | Version | What it does                                         | Status  |
+| ------------- | ------- | ---------------------------------------------------- | ------- |
+| Google Maps   | v0.2.0  | Makes the photo's location clickable, opens in Maps. | ✅      |
+| OpenStreetMap | v0.3.0  | Same, for people who prefer OSM.                     | Planned |
+| Mini map      | v0.4.0  | An inline map preview in the lightbox info panel.    | Planned |
+| Advanced EXIF | v0.5.0  | The full EXIF payload, not Synology's subset.        | Planned |
+| Street View   | v0.6.0  | Opens the shooting location in Street View.          | Planned |
+| World map     | v0.7.0  | Every geotagged photo in your library on one map.    | Planned |
+| Statistics    | v0.8.0  | Counts by camera, lens, year, place.                 | Planned |
 
-Each is an independent plugin, individually toggleable, and none of them exists
-yet — v0.1.0 is the base they plug into.
+Each is an independent plugin, individually toggleable from the popup, and each
+works in both the personal and shared libraries.
 
 ## Screenshots
 
-> Placeholders until v0.2.0 ships something to look at.
+> Placeholder until a real capture lands.
 
-| Lightbox with map link | Extension popup |
-| :--------------------: | :-------------: |
-|       _(v0.2.0)_       |   _(v0.1.0)_    |
+| Clickable location in the lightbox | Extension popup |
+| :--------------------------------: | :-------------: |
+|             _(v0.2.0)_             |   _(v0.1.0)_    |
 
 ## Installation
 
@@ -197,8 +196,8 @@ Writing a plugin is a folder and one line: **[CONTRIBUTING.md](CONTRIBUTING.md)*
 | Version | Scope                                           | Status  |
 | ------- | ----------------------------------------------- | ------- |
 | v0.1.0  | Architecture: plugin system, EventBus, XHR hook | ✅      |
-| v0.2.0  | Google Maps — clickable location                | Next    |
-| v0.3.0  | OpenStreetMap                                   | Planned |
+| v0.2.0  | Google Maps — clickable location                | ✅      |
+| v0.3.0  | OpenStreetMap                                   | Next    |
 | v0.4.0  | Mini map in the lightbox                        | Planned |
 | v0.5.0  | Advanced EXIF                                   | Planned |
 | v0.6.0  | Street View                                     | Planned |
