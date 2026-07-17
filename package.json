@@ -1,6 +1,6 @@
 {
   "name": "synology-photos-enhancer",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Browser extension that enhances the Synology Photos web app. Plugin-based, no NAS-side changes.",
   "license": "MIT",

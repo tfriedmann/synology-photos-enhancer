@@ -158,7 +158,7 @@ web-accessible-resources and asset hashing, and losing HMR.
 **Why.** Reading the photo id from the hash is the obvious approach and it does
 not hold up:
 
-- `#/…/item/<id>` is confirmed **only for folder views**. See §7.
+- `#/…/item/<id>` is confirmed **only for folder views**. See §8.
 - Even where the id _is_ in the URL, **`cache_key` is not** — and no thumbnail
   URL can be built without it. The URL is never sufficient on its own.
 
@@ -230,7 +230,47 @@ _never destroying Synology's DOM_.
 
 ---
 
-## 6. Smaller decisions
+## 6. When a "feature" is not a plugin
+
+**The rule.** If a candidate plugin needs a DOM node another plugin already
+owns, it is not a plugin. It is an option of that plugin.
+
+**Where it came from.** The roadmap listed Google Maps (v0.2.0) and
+OpenStreetMap (v0.3.0) as two features, so `openStreetMap` was going to be a
+second plugin. It cannot be. Both target the _same_ element — Synology's address
+line — so both would add a class and a click listener to it, and one click would
+open two tabs. And they could not negotiate, because plugins may not know about
+each other (§ the invariant below). **Two plugins that cannot coexist are not two
+features; they are one feature cut in the wrong place.**
+
+So `googleMaps` became `locationLink`: the plugin owns the element, and a map is
+data — a name and a `gps => url` function in `providers.ts`. Adding one is four
+lines and cannot conflict with anything.
+
+**It applies again.** Street View (roadmap v0.6.0) targets the same element. It
+is a provider, not a plugin. The mini map (v0.4.0) renders _next to_ the address
+rather than on it, so it can be its own plugin — the test is ownership of a
+node, not subject matter.
+
+**How to tell.** Ask what the plugin _owns_. Two plugins wanting to own the same
+node is the smell. Two plugins reading the same event is fine — that is what the
+bus is for.
+
+### Per-plugin options
+
+`Settings.options` keys each plugin's preferences by plugin id and types them
+`unknown`. The core storing `mapProvider: string` would mean the core knows a
+plugin exists — the one thing it must never do. Each plugin parses its own slice
+with its own guard, exactly as it parses anything else it did not author.
+
+`Plugin.renderOptions()` lets a plugin supply its own settings UI, which the
+popup renders without knowing what it is. The alternative — the popup
+hard-coding a control per plugin — would put feature knowledge in the shell and
+grow a branch with every plugin.
+
+---
+
+## 7. Smaller decisions
 
 - **AbortSignal instead of a disposal dialect.** `bus.on(..., { signal })`
   mirrors `addEventListener`. One `AbortController` per plugin retires every
@@ -261,7 +301,7 @@ _never destroying Synology's DOM_.
 
 ---
 
-## 7. What we do not know
+## 8. What we do not know
 
 Honest gaps. **Measure these; do not assume them.** Update this section when you
 learn something — that is the whole point of it.

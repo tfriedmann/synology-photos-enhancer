@@ -178,6 +178,22 @@ body {
   font-size: 12px;
 }
 
+/* Rendered by the plugin itself via `renderOptions`, so the shell styles the
+ * slot without knowing what goes in it. */
+.plugin__option-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.plugin__option {
+  padding: 2px 4px;
+  font-size: 12px;
+}
+
 .field {
   display: flex;
   align-items: center;
