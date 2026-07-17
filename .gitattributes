@@ -1,0 +1,21 @@
+# Line endings — LF everywhere, on every machine.
+#
+# Not a style preference: this project *enforces* LF (`.editorconfig` sets
+# `end_of_line = lf`, Prettier sets `endOfLine: "lf"`). Git on Windows defaults
+# to `core.autocrlf=true`, which rewrites LF to CRLF on checkout — so without
+# this file a fresh clone on Windows fails `npm run verify` at the very first
+# step, format:check, on code nobody touched.
+#
+# `text=auto eol=lf` overrides any contributor's local `core.autocrlf`, so the
+# working copy matches what the repo stores and what CI checks.
+* text=auto eol=lf
+
+# Explicitly binary: never normalise, never diff as text.
+*.png binary
+*.jpg binary
+*.ico binary
+*.zip binary
+
+# Generated. Collapsed in PR diffs, and excluded from language stats so the
+# repo is not reported as mostly JSON.
+package-lock.json linguist-generated=true -diff
